@@ -1,0 +1,86 @@
+<svg viewBox="0 0 1000 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="CodeUnical — Secure Coding Exam Platform">
+  <defs>
+    <linearGradient id="titleGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#6366f1"/>
+      <stop offset="50%" stop-color="#a855f7"/>
+      <stop offset="100%" stop-color="#22d3ee"/>
+      <animate attributeName="x1" values="0;1;0" dur="7s" repeatCount="indefinite"/>
+      <animate attributeName="x2" values="1;2;1" dur="7s" repeatCount="indefinite"/>
+    </linearGradient>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0b1020"/>
+      <stop offset="100%" stop-color="#0d1117"/>
+    </linearGradient>
+    <pattern id="grid" width="42" height="42" patternUnits="userSpaceOnUse">
+      <path d="M42 0H0V42" fill="none" stroke="#1e293b" stroke-width="1" opacity="0.55"/>
+    </pattern>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="3.2" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <clipPath id="typeClip">
+      <rect x="196" y="214" width="0" height="30">
+        <animate attributeName="width" values="0;372;372;0" keyTimes="0;0.55;0.9;1" dur="6s" repeatCount="indefinite"/>
+      </rect>
+    </clipPath>
+  </defs>
+
+  <rect width="1000" height="320" fill="url(#bgGrad)"/>
+  <rect width="1000" height="320" fill="url(#grid)"/>
+
+  <!-- moving scanline -->
+  <rect x="0" width="1000" height="2" fill="#22c55e" opacity="0.16">
+    <animate attributeName="y" values="-4;324;-4" dur="7s" repeatCount="indefinite"/>
+  </rect>
+
+  <!-- HUD corner brackets -->
+  <g stroke="#4f46e5" stroke-width="2" fill="none" opacity="0.85">
+    <path d="M26 42 V26 H42"/>
+    <path d="M974 42 V26 H958"/>
+    <path d="M26 278 V294 H42"/>
+    <path d="M974 278 V294 H958"/>
+  </g>
+
+  <!-- shield emblem with pulse -->
+  <g transform="translate(500,66)">
+    <path d="M0 -26 L23 -16 V4 C23 21 12 31 0 37 C-12 31 -23 21 -23 4 V-16 Z"
+          fill="none" stroke="#22d3ee" stroke-width="2.5">
+      <animate attributeName="opacity" values="0.45;1;0.45" dur="3s" repeatCount="indefinite"/>
+    </path>
+    <path d="M-9 1 L-2 9 L11 -7" fill="none" stroke="#22c55e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <!-- title -->
+  <text x="500" y="162" text-anchor="middle"
+        font-family="'JetBrains Mono','Fira Code',ui-monospace,SFMono-Regular,monospace"
+        font-size="70" font-weight="700" fill="url(#titleGrad)" filter="url(#glow)" letter-spacing="1">CodeUnical</text>
+
+  <!-- subtitle -->
+  <text x="500" y="192" text-anchor="middle"
+        font-family="ui-monospace,SFMono-Regular,monospace" font-size="14" fill="#94a3b8" letter-spacing="5">UNISMUH · SECURE CODING EXAM PLATFORM</text>
+
+  <!-- terminal typewriter line -->
+  <g font-family="'JetBrains Mono',ui-monospace,monospace" font-size="18">
+    <text x="196" y="236" fill="#22c55e" clip-path="url(#typeClip)">&gt; ketik manual  //  paste blocked</text>
+    <rect y="219" width="9" height="20" fill="#22c55e">
+      <animate attributeName="x" values="196;568;568;196" keyTimes="0;0.55;0.9;1" dur="6s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="1;0;1" dur="0.8s" repeatCount="indefinite"/>
+    </rect>
+  </g>
+
+  <!-- status pills -->
+  <g font-family="ui-monospace,monospace" font-size="12" text-anchor="middle">
+    <g transform="translate(363,266)">
+      <rect x="-60" width="120" height="26" rx="13" fill="#0f172a" stroke="#4f46e5"/>
+      <text x="0" y="17" fill="#c7d2fe">manual typing</text>
+    </g>
+    <g transform="translate(500,266)">
+      <rect x="-54" width="108" height="26" rx="13" fill="#0f172a" stroke="#a855f7"/>
+      <text x="0" y="17" fill="#e9d5ff">auto-graded</text>
+    </g>
+    <g transform="translate(632,266)">
+      <rect x="-46" width="92" height="26" rx="13" fill="#0f172a" stroke="#22c55e"/>
+      <text x="0" y="17" fill="#bbf7d0">isolated</text>
+    </g>
+  </g>
+</svg>

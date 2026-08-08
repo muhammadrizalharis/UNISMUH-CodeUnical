@@ -1,34 +1,18 @@
 <div align="center">
 
-<img src="https://capsule-render.vercel.app/api?type=waving&color=0:0f172a,50:4f46e5,100:7c3aed&height=200&section=header&text=CodeUnical&fontSize=72&fontColor=ffffff&fontAlignY=38&desc=UNISMUH%20%C2%B7%20Secure%20Coding%20Exam%20Platform&descSize=16&descAlignY=58&animation=fadeIn" width="100%" />
+<img src="assets/banner.svg" width="100%" alt="CodeUnical — Secure Coding Exam Platform" />
 
-<img src="https://readme-typing-svg.demolab.com?font=JetBrains+Mono&weight=500&size=18&pause=1000&duration=2800&color=22C55E&center=true&vCenter=true&width=720&lines=%3E+ketik+manual+(no+paste);%3E+run+-%3E+auto-graded;%3E+proctored+-%3E+camera+%2B+anti-macro;%3E+integrity+enforced+by+design" alt="terminal" />
+<br/>
 
-<br/><br/>
+<code>status: in-development</code> &nbsp;·&nbsp; <code>mode: lab &amp; remote</code> &nbsp;·&nbsp; <code>license: proprietary</code> &nbsp;·&nbsp; <code>UNISMUH · Informatika</code>
 
-![status](https://img.shields.io/badge/status-in__development-F59E0B?style=flat-square&labelColor=0f172a)
-![mode](https://img.shields.io/badge/mode-Lab_%26_Remote-4f46e5?style=flat-square&labelColor=0f172a)
-![license](https://img.shields.io/badge/license-Proprietary-EF4444?style=flat-square&labelColor=0f172a)
-![unismuh](https://img.shields.io/badge/UNISMUH-Informatika-7c3aed?style=flat-square&labelColor=0f172a)
-
-</div>
-
----
-
-<div align="center">
-
-```console
-$ codeunical exam:start --lang python --mode lab
-  ✓ editor locked        ✓ paste blocked        ✓ camera armed
-  ✓ fullscreen forced    ✓ keystrokes logged    ✓ similarity check
-→ Ketik kodemu. Setiap ketukan direkam. Good luck.
-```
+<br/>
 
 <kbd>Ctrl</kbd> + <kbd>V</kbd> ❌ &nbsp;&nbsp; <kbd>Ctrl</kbd> + <kbd>C</kbd> ❌ &nbsp;&nbsp; <kbd>Manual&nbsp;Typing</kbd> ✅
 
 </div>
 
----
+<img src="assets/rule.svg" width="100%" alt="" />
 
 ## `~/` Apa itu CodeUnical?
 
@@ -38,7 +22,7 @@ Mahasiswa **wajib mengetik kode secara manual** (tanpa copy-paste), kode **dijal
 
 > Multi-bahasa *pluggable* — `Python` · `SQL` · `C++` · `HTML` · … — tambah runner tanpa mengubah inti.
 
----
+<img src="assets/rule.svg" width="100%" alt="" />
 
 ## `>` Fitur Unggulan
 
@@ -53,18 +37,18 @@ Mahasiswa **wajib mengetik kode secara manual** (tanpa copy-paste), kode **dijal
 | `🔍` | **Code Similarity** | Bandingkan AST + *fingerprint*, bukan sekadar teks |
 | `📊` | **Live Dashboard** | Pantau semua mahasiswa realtime + drill-down per individu |
 
----
+<img src="assets/rule.svg" width="100%" alt="" />
 
 ## `#` Anti-Cheat Berlapis
 
 ```mermaid
 flowchart LR
-    A["paste&nbsp;block"] --> B["rhythm&nbsp;detect"]
-    B --> C["keystroke&nbsp;replay"]
-    C --> D["fullscreen&nbsp;+&nbsp;tab/monitor"]
+    A["paste block"] --> B["rhythm detect"]
+    B --> C["keystroke replay"]
+    C --> D["fullscreen + tab/monitor"]
     D --> E["3-strike"]
-    E --> F["camera&nbsp;(face/phone)"]
-    F --> G["code&nbsp;similarity"]
+    E --> F["camera (face/phone)"]
+    F --> G["code similarity"]
     G --> H["integrity ✓"]
     style H fill:#22c55e,color:#0f172a,stroke:#16a34a
     style A fill:#4f46e5,color:#fff,stroke:#4338ca
@@ -72,7 +56,7 @@ flowchart LR
 
 > **Filosofi:** menang bukan di *memblokir input*, tapi di **kombinasi lapisan**. Walau cara memasukkan kode tak terdeteksi, **hasil identik tetap ketahuan** lewat cek kemiripan.
 
----
+<img src="assets/rule.svg" width="100%" alt="" />
 
 ## `⌥` Mode Ujian
 
@@ -105,7 +89,7 @@ Dari rumah · tanpa pengawas fisik
 </tr>
 </table>
 
----
+<img src="assets/rule.svg" width="100%" alt="" />
 
 ## `⌘` Arsitektur
 
@@ -136,46 +120,19 @@ flowchart TB
     style client fill:#1e1b4b,color:#e2e8f0,stroke:#7c3aed
 ```
 
----
-
-## `↻` Alur Ujian
-
-```mermaid
-flowchart LR
-    A["login"] --> B["pilih ujian"]
-    B --> C["izin kamera"]
-    C --> D["fullscreen"]
-    D --> E["soal acak"]
-    E --> F["ketik manual"]
-    F --> G["run"]
-    G --> F
-    F --> H["submit"]
-    H --> I["auto-grade"]
-    I --> J["nilai ✓"]
-    style J fill:#22c55e,color:#0f172a,stroke:#16a34a
-    style A fill:#4f46e5,color:#fff,stroke:#4338ca
-```
-
----
+<img src="assets/rule.svg" width="100%" alt="" />
 
 ## `⚙` Tech Stack
 
 <div align="center">
 
-![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=next.js&logoColor=white)
-![NestJS](https://img.shields.io/badge/NestJS-E0234E?style=for-the-badge&logo=nestjs&logoColor=white)
-![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)
-![Prisma](https://img.shields.io/badge/Prisma-2D3748?style=for-the-badge&logo=prisma&logoColor=white)
-![Redis](https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white)
-![MinIO](https://img.shields.io/badge/MinIO-C72E49?style=for-the-badge&logo=minio&logoColor=white)
-![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
-![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
-![Prometheus](https://img.shields.io/badge/Prometheus-E6522C?style=for-the-badge&logo=prometheus&logoColor=white)
+`Next.js` &nbsp; `NestJS` &nbsp; `TypeScript` &nbsp; `PostgreSQL` &nbsp; `Prisma`
+
+`Redis` &nbsp; `MinIO` &nbsp; `Docker` &nbsp; `Python` &nbsp; `Prometheus`
 
 </div>
 
----
+<img src="assets/rule.svg" width="100%" alt="" />
 
 ## `⛁` Struktur
 
@@ -186,11 +143,12 @@ CodeUnical/
 ├── sandbox/      executor eksekusi kode (docker per bahasa)
 ├── proctor/      python — yolo · face recognition · code similarity
 ├── prisma/       skema & migrasi database
+├── assets/       aset visual (banner.svg, rule.svg)
 ├── docs/         BLUEPRINT.md (cetak biru detail)
 └── docker-compose.yml
 ```
 
----
+<img src="assets/rule.svg" width="100%" alt="" />
 
 ## `☑` Roadmap
 
@@ -204,7 +162,7 @@ CodeUnical/
 [ ] multi-bahasa (sql · c++ · html)
 ```
 
----
+<img src="assets/rule.svg" width="100%" alt="" />
 
 ## `!` Batasan Jujur
 
@@ -214,7 +172,7 @@ CodeUnical/
 - Kamera = penekan kuat, bukan tembok → mode Lab **kumpulkan HP** fisik.
 - 100% anti-nyontek hanya via **ujian lab terkontrol / proctoring**.
 
----
+<img src="assets/rule.svg" width="100%" alt="" />
 
 ## `🔒` Keamanan & Privasi
 
@@ -223,16 +181,14 @@ CodeUnical/
 - **Sandbox** — jaringan internal, batas cpu/ram/waktu, non-root, cap-drop.
 - **Enforcement** nilai/strike di sisi server (client tak dipercaya).
 
-<br/>
+<img src="assets/rule.svg" width="100%" alt="" />
 
 <div align="center">
 
-`built for academic integrity`
+<sub><code>built for academic integrity</code></sub>
 
 **Pengembang** — Muhammad Rizal Haris
 
-<sub>© 2026 Muhammad Rizal Haris · Proprietary & Confidential</sub>
-
-<img src="https://capsule-render.vercel.app/api?type=waving&color=0:7c3aed,50:4f46e5,100:0f172a&height=120&section=footer" width="100%" />
+<sub>© 2026 Muhammad Rizal Haris · Proprietary &amp; Confidential</sub>
 
 </div>
