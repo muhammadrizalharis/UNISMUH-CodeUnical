@@ -19,7 +19,7 @@ build/
 .next/
 out/
 *.tsbuildinfo
-src/generated/
+**/src/generated/
 
 # ── Python ──
 __pycache__/

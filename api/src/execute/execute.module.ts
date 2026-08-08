@@ -5,5 +5,6 @@ import { ExecuteService } from './execute.service';
 @Module({
   controllers: [ExecuteController],
   providers: [ExecuteService],
+  exports: [ExecuteService],
 })
 export class ExecuteModule {}

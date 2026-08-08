@@ -1,0 +1,47 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Problem {
+  id          String       @id @default(cuid())
+  title       String
+  description String
+  language    String       @default("python")
+  starterCode String       @default("")
+  difficulty  String       @default("mudah") // mudah | sedang | sulit
+  timeLimitMs Int          @default(15000)
+  createdAt   DateTime     @default(now())
+  testCases   TestCase[]
+  submissions Submission[]
+}
+
+model TestCase {
+  id        String  @id @default(cuid())
+  problemId String
+  problem   Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  stdin     String  @default("")
+  expected  String
+  hidden    Boolean @default(true)
+  points    Int     @default(1)
+  order     Int     @default(0)
+}
+
+model Submission {
+  id        String   @id @default(cuid())
+  problemId String
+  problem   Problem  @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  code      String
+  language  String   @default("python")
+  passed    Int      @default(0)
+  total     Int      @default(0)
+  score     Int      @default(0)
+  maxScore  Int      @default(0)
+  detail    Json?
+  createdAt DateTime @default(now())
+}

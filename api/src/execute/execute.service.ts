@@ -23,7 +23,7 @@ const MAX_OUTPUT = 100_000;
 
 @Injectable()
 export class ExecuteService {
-  async runPython(code: string): Promise<ExecuteResult> {
+  async runPython(code: string, stdin = ''): Promise<ExecuteResult> {
     const dir = await mkdtemp(join(tmpdir(), 'codeunical-'));
     const name = `codeunical-exec-${randomUUID()}`;
     const started = Date.now();
@@ -33,7 +33,7 @@ export class ExecuteService {
       await chmod(join(dir, 'main.py'), 0o644);
       const runArgs = [
         ...DOCKER_BASE,
-        'run', '--rm', '--name', name,
+        'run', '--rm', '-i', '--name', name,
         '--network', 'none',
         '--memory', MEMORY, '--cpus', '1', '--pids-limit', '128',
         '--read-only', '--tmpfs', '/tmp:size=64m',
@@ -43,7 +43,7 @@ export class ExecuteService {
         '-v', `${dir}:/work:ro`, '-w', '/work',
         PYTHON_IMAGE, 'python', '/work/main.py',
       ];
-      const result = await this.spawnCollect(runArgs, name);
+      const result = await this.spawnCollect(runArgs, name, stdin);
       return { ...result, durationMs: Date.now() - started };
     } finally {
       await rm(dir, { recursive: true, force: true }).catch(() => undefined);
@@ -53,11 +53,15 @@ export class ExecuteService {
   private spawnCollect(
     runArgs: string[],
     name: string,
+    stdin: string,
   ): Promise<Omit<ExecuteResult, 'durationMs'>> {
     return new Promise((resolve) => {
       const child = spawn(DOCKER_BIN, runArgs, {
-        stdio: ['ignore', 'pipe', 'pipe'],
+        stdio: ['pipe', 'pipe', 'pipe'],
       });
+      child.stdin.on('error', () => undefined);
+      if (stdin) child.stdin.write(stdin);
+      child.stdin.end();
       let stdout = '';
       let stderr = '';
       let timedOut = false;

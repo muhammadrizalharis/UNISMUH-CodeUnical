@@ -1,0 +1,23 @@
+name: codeunical
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: codeunical-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-codeunical}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?wajib diisi di .env}
+      POSTGRES_DB: ${POSTGRES_DB:-codeunical}
+    ports:
+      - "127.0.0.1:47432:5432"
+    volumes:
+      - codeunical-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-codeunical}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  codeunical-pgdata:
