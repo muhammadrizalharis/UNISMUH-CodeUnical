@@ -6,7 +6,7 @@ import Editor, { type OnMount } from '@monaco-editor/react';
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:47080';
 const STORAGE_KEY = 'codeunical:draft:demo';
 const EXAM_SECONDS = 30 * 60;
-const STARTER = `# UNISMUH CodeUnical — demo\n# Ketik kodemu (paste dinonaktifkan)\n\nfor i in range(1, 6):\n    print(f"baris {i}")\n`;
+const STARTER = `# UNISMUH CodeUnical\n# Ketik kodemu (paste dinonaktifkan)\n\nfor i in range(1, 6):\n    print(f"baris {i}")\n`;
 
 interface RunResult {
   stdout: string;
@@ -109,7 +109,7 @@ export default function ExamPage() {
             UNISMUH <span className="text-violet-400">CodeUnical</span>
           </span>
           <span className="rounded bg-slate-800 px-2 py-0.5 font-mono text-xs text-slate-400">
-            python · demo
+            python
           </span>
         </div>
         <div className="flex items-center gap-4 text-sm">
