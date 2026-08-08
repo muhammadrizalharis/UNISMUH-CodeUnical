@@ -4,9 +4,11 @@ node_modules/
 .pnp.js
 
 # ── Environment & Rahasia (JANGAN commit) ──
+# TIDAK ada pengecualian untuk .env.example: berkas contoh pun mudah terisi nilai
+# asli saat disalin-tempel, dan sekali ter-commit ia menetap di riwayat git.
+# Dokumentasikan daftar kunci di README saja, bukan sebagai berkas .env*.
 .env
 .env.*
-!.env.example
 secrets/
 *.key
 *.pem
