@@ -5,8 +5,11 @@ import {
   Get,
   Param,
   Post,
+  UseGuards,
 } from '@nestjs/common';
 import { ProblemsService } from './problems.service';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
 
 @Controller('problems')
 export class ProblemsController {
@@ -28,6 +31,8 @@ export class ProblemsController {
   }
 
   @Get(':id/similarity')
+  @UseGuards(RolesGuard)
+  @Roles('penguji', 'superadmin')
   similarity(@Param('id') id: string) {
     return this.problems.similarity(id);
   }

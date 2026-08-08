@@ -1,7 +1,11 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { MonitorService } from './monitor.service';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
 
 @Controller('monitor')
+@UseGuards(RolesGuard)
+@Roles('penguji', 'superadmin')
 export class MonitorController {
   constructor(private readonly monitor: MonitorService) {}
 

@@ -78,3 +78,27 @@ model Keystroke {
 
   @@index([attemptId])
 }
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  name         String
+  role         String    @default("peserta") // superadmin | penguji | peserta
+  status       String    @default("active") // active | pending | suspended
+  passwordHash String?
+  ssoSub       String?   @unique
+  createdAt    DateTime  @default(now())
+  lastLoginAt  DateTime?
+  sessions     Session[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}

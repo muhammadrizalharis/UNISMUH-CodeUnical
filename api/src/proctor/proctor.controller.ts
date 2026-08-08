@@ -5,8 +5,11 @@ import {
   Get,
   Param,
   Post,
+  UseGuards,
 } from '@nestjs/common';
 import { ProctorService } from './proctor.service';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
 
 @Controller('attempts')
 export class ProctorController {
@@ -42,6 +45,8 @@ export class ProctorController {
   }
 
   @Get(':id/replay')
+  @UseGuards(RolesGuard)
+  @Roles('penguji', 'superadmin')
   replay(@Param('id') id: string) {
     return this.proctor.replay(id);
   }
