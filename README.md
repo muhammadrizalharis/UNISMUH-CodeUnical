@@ -216,7 +216,9 @@ CodeUnical/
 
 **Dibuat dengan 🛡️ untuk integritas akademik — UNISMUH CodeUnical**
 
-<em>© 2026 · Proprietary & Confidential</em>
+**Pengembang:** Muhammad Rizal Haris
+
+<em>© 2026 Muhammad Rizal Haris · Proprietary & Confidential</em>
 
 <img src="https://capsule-render.vercel.app/api?type=waving&color=0:EC4899,50:8B5CF6,100:6366F1&height=120&section=footer" width="100%" />
 
