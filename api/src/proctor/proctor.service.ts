@@ -92,4 +92,32 @@ export class ProctorService {
     if (!attempt) throw new NotFoundException('Attempt tidak ditemukan.');
     return attempt;
   }
+
+  async saveSnapshot(attemptId: string, kind: string, dataUrl: string) {
+    const m = /^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/.exec(dataUrl);
+    if (!m) return { ok: false };
+    const buf = Buffer.from(m[2], 'base64');
+    if (buf.length > 2_000_000) return { ok: false };
+    await this.prisma.proctorSnapshot.create({
+      data: { attemptId, kind: kind.slice(0, 40), mime: m[1], image: buf },
+    });
+    await this.prisma.examAttempt
+      .update({ where: { id: attemptId }, data: { lastSeenAt: new Date() } })
+      .catch(() => undefined);
+    return { ok: true };
+  }
+
+  listSnapshots(attemptId: string) {
+    return this.prisma.proctorSnapshot.findMany({
+      where: { attemptId },
+      orderBy: { at: 'asc' },
+      select: { id: true, kind: true, mime: true, at: true },
+    });
+  }
+
+  async getSnapshot(id: string) {
+    const s = await this.prisma.proctorSnapshot.findUnique({ where: { id } });
+    if (!s) return null;
+    return { mime: s.mime, image: s.image };
+  }
 }

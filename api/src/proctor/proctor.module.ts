@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
-import { ProctorController } from './proctor.controller';
+import { ProctorController, SnapshotController } from './proctor.controller';
 import { ProctorService } from './proctor.service';
 
 @Module({
-  controllers: [ProctorController],
+  controllers: [ProctorController, SnapshotController],
   providers: [ProctorService],
 })
 export class ProctorModule {}

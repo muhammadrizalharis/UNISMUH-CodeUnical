@@ -56,6 +56,7 @@ model ExamAttempt {
   endedAt    DateTime?
   events     ProctorEvent[]
   keystrokes Keystroke[]
+  snapshots  ProctorSnapshot[]
 }
 
 model ProctorEvent {
@@ -75,6 +76,18 @@ model Keystroke {
   attempt   ExamAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
   t         Int // ms offset dari mulai attempt
   value     String
+
+  @@index([attemptId])
+}
+
+model ProctorSnapshot {
+  id        String      @id @default(cuid())
+  attemptId String
+  attempt   ExamAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  kind      String
+  mime      String      @default("image/jpeg")
+  image     Bytes
+  at        DateTime    @default(now())
 
   @@index([attemptId])
 }
