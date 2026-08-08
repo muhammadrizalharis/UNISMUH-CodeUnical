@@ -27,6 +27,11 @@ export class ProblemsController {
     return this.problems.detail(id);
   }
 
+  @Get(':id/similarity')
+  similarity(@Param('id') id: string) {
+    return this.problems.similarity(id);
+  }
+
   @Post(':id/submit')
   submit(@Param('id') id: string, @Body() body: { code?: string }) {
     const code = body?.code ?? '';

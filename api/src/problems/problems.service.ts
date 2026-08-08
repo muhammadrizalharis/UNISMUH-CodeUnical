@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { GradingService } from '../grading/grading.service';
+import { codeFingerprint, similarity as simScore } from '../similarity/similarity';
 
 @Injectable()
 export class ProblemsService {
@@ -79,5 +80,34 @@ export class ProblemsService {
     });
 
     return graded;
+  }
+
+  async similarity(problemId: string) {
+    const subs = await this.prisma.submission.findMany({
+      where: { problemId },
+      select: { id: true, createdAt: true, code: true, score: true },
+      orderBy: { createdAt: 'asc' },
+    });
+    const fps = subs.map((s) => ({
+      id: s.id,
+      createdAt: s.createdAt,
+      score: s.score,
+      fp: codeFingerprint(s.code),
+    }));
+    const pairs: { a: string; b: string; similarity: number }[] = [];
+    for (let i = 0; i < fps.length; i++) {
+      for (let j = i + 1; j < fps.length; j++) {
+        const sim = simScore(fps[i].fp, fps[j].fp);
+        if (sim >= 0.6) {
+          pairs.push({
+            a: fps[i].id,
+            b: fps[j].id,
+            similarity: Math.round(sim * 100),
+          });
+        }
+      }
+    }
+    pairs.sort((x, y) => y.similarity - x.similarity);
+    return { total: subs.length, pairs: pairs.slice(0, 100) };
   }
 }

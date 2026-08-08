@@ -5,9 +5,10 @@ import { ExecuteModule } from './execute/execute.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ProblemsModule } from './problems/problems.module';
 import { ProctorModule } from './proctor/proctor.module';
+import { MonitorModule } from './monitor/monitor.module';
 
 @Module({
-  imports: [PrismaModule, ExecuteModule, ProblemsModule, ProctorModule],
+  imports: [PrismaModule, ExecuteModule, ProblemsModule, ProctorModule, MonitorModule],
   controllers: [AppController],
   providers: [AppService],
 })
