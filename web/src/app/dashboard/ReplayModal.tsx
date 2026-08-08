@@ -19,6 +19,12 @@ interface Replay {
   keystrokes: Key[];
   events: Ev[];
 }
+interface Snap {
+  id: string;
+  kind: string;
+  mime: string;
+  at: string;
+}
 
 export function ReplayModal({
   attemptId,
@@ -28,6 +34,7 @@ export function ReplayModal({
   onClose: () => void;
 }) {
   const [data, setData] = useState<Replay | null>(null);
+  const [snaps, setSnaps] = useState<Snap[]>([]);
   const [playhead, setPlayhead] = useState(0);
   const [playing, setPlaying] = useState(false);
   const lastRef = useRef(0);
@@ -36,6 +43,10 @@ export function ReplayModal({
     fetch(`${API}/attempts/${attemptId}/replay`, { credentials: 'include' })
       .then((r) => r.json())
       .then(setData)
+      .catch(() => undefined);
+    fetch(`${API}/attempts/${attemptId}/snapshots`, { credentials: 'include' })
+      .then((r) => (r.ok ? r.json() : []))
+      .then(setSnaps)
       .catch(() => undefined);
   }, [attemptId]);
 
@@ -113,6 +124,43 @@ export function ReplayModal({
                 {(playhead / 1000).toFixed(1)}s / {(maxT / 1000).toFixed(1)}s
               </span>
             </div>
+            {snaps.length > 0 && (
+              <div className="border-t border-slate-800 px-4 py-3">
+                <p className="mb-2 font-mono text-xs text-slate-500">
+                  📷 Bukti kamera ({snaps.length})
+                </p>
+                <div className="flex gap-2 overflow-x-auto pb-1">
+                  {snaps.map((s) => (
+                    <a
+                      key={s.id}
+                      href={`${API}/snapshots/${s.id}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="shrink-0"
+                      title={`${s.kind} · ${new Date(s.at).toLocaleTimeString()}`}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={`${API}/snapshots/${s.id}`}
+                        alt={s.kind}
+                        className="h-20 w-28 rounded border border-slate-700 object-cover"
+                      />
+                      <span
+                        className={`mt-0.5 block text-center text-[9px] ${
+                          s.kind === 'multiple_faces'
+                            ? 'text-rose-400'
+                            : s.kind === 'face_absent'
+                              ? 'text-amber-400'
+                              : 'text-slate-500'
+                        }`}
+                      >
+                        {s.kind}
+                      </span>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className="max-h-28 overflow-auto border-t border-slate-800 px-4 py-2 font-mono text-xs">
               <span className="text-slate-500">
                 status {data.status} · {data.strikes}/3 strike · {data.keystrokes.length} snapshot

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Editor, { type OnMount } from '@monaco-editor/react';
 import { useProctor } from './useProctor';
+import { useCamera } from './useCamera';
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:47080';
 const EXAM_SECONDS = 30 * 60;
@@ -69,6 +70,8 @@ export default function ExamPage() {
   const [secondsLeft, setSecondsLeft] = useState(EXAM_SECONDS);
   const startRef = useRef(0);
   const proctor = useProctor();
+  const [camConsent, setCamConsent] = useState(false);
+  const camera = useCamera(proctor.attemptId, proctor.active && camConsent);
 
   useEffect(() => {
     startRef.current = examStartMs();
@@ -187,6 +190,22 @@ export default function ExamPage() {
   const timeUp = secondsLeft <= 0;
   const locked = timeUp || !proctor.active || proctor.kicked;
 
+  const camBadge = !camConsent
+    ? { txt: 'off', cls: 'text-slate-500' }
+    : camera.status === 'on'
+      ? camera.faces === 0
+        ? { txt: 'tanpa wajah', cls: 'text-amber-400' }
+        : camera.faces > 1
+          ? { txt: `${camera.faces} wajah`, cls: 'text-rose-400' }
+          : { txt: 'aktif', cls: 'text-emerald-400' }
+      : camera.status === 'denied'
+        ? { txt: 'ditolak', cls: 'text-rose-400' }
+        : camera.status === 'starting'
+          ? { txt: 'memulai…', cls: 'text-slate-400' }
+          : camera.status === 'error'
+            ? { txt: 'error', cls: 'text-rose-400' }
+            : { txt: 'off', cls: 'text-slate-500' };
+
   return (
     <div className="flex h-screen flex-col bg-[#0d1117] text-slate-200">
       <header className="flex items-center justify-between border-b border-slate-800 px-5 py-3">
@@ -199,6 +218,9 @@ export default function ExamPage() {
           </span>
           <span className="text-slate-500">
             strike: <span className="font-mono text-rose-400">{proctor.strikes}/3</span>
+          </span>
+          <span className="text-slate-500">
+            kamera: <span className={`font-mono ${camBadge.cls}`}>{camBadge.txt}</span>
           </span>
           <span className="text-slate-500">
             paste: <span className="font-mono text-amber-400">{pasteHits}</span>
@@ -326,6 +348,24 @@ export default function ExamPage() {
         🛡️ ketik manual · paste diblokir · layar penuh dipantau · dijalankan di sandbox
       </footer>
 
+      {/* Pratinjau kamera (pojok kiri bawah) */}
+      {proctor.active && camConsent && (
+        <div className="absolute bottom-8 left-3 z-20 overflow-hidden rounded-lg border border-slate-700 bg-black/70 shadow-lg">
+          <video
+            ref={camera.videoRef}
+            muted
+            playsInline
+            className="h-24 w-32 -scale-x-100 object-cover"
+          />
+          <div className="flex items-center justify-between gap-2 px-2 py-1 text-[10px]">
+            <span className={`font-mono ${camBadge.cls}`}>● {camBadge.txt}</span>
+            {!camera.detReady && camera.status === 'on' && (
+              <span className="text-slate-500">berkala</span>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Overlay mulai ujian (gesture untuk fullscreen) */}
       {problem && !proctor.active && !proctor.kicked && (
         <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-[#0d1117]/95 text-center">
@@ -334,12 +374,27 @@ export default function ExamPage() {
             Ujian berjalan dalam <b>layar penuh</b> dan dipantau. Keluar dari layar ujian dihitung
             pelanggaran — <b>3 pelanggaran = didiskualifikasi</b> dan mengulang.
           </p>
+          <label className="mt-5 flex max-w-md items-start gap-3 rounded-lg border border-slate-700 bg-[#161b22] p-4 text-left text-sm text-slate-300">
+            <input
+              type="checkbox"
+              checked={camConsent}
+              onChange={(e) => setCamConsent(e.target.checked)}
+              className="mt-0.5 h-4 w-4 accent-violet-600"
+            />
+            <span>
+              Saya setuju <b>kamera direkam</b> selama ujian. Sistem hanya menyimpan{' '}
+              <b>foto bukti</b> saat wajah tak terdeteksi atau ada lebih dari satu orang.
+              Rekaman hanya dapat dilihat dosen penguji.
+            </span>
+          </label>
           <button
             onClick={() => proctor.start(problem.id)}
-            className="mt-6 rounded-lg bg-violet-600 px-7 py-3 font-medium text-white transition hover:bg-violet-500"
+            disabled={!camConsent}
+            className="mt-6 rounded-lg bg-violet-600 px-7 py-3 font-medium text-white transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-40"
           >
             Mulai Ujian (Layar Penuh) →
           </button>
+          <p className="mt-3 text-xs text-slate-600">Centang persetujuan kamera untuk memulai.</p>
         </div>
       )}
 
