@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Editor, { type OnMount } from '@monaco-editor/react';
+import { useProctor } from './useProctor';
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:47080';
 const EXAM_SECONDS = 30 * 60;
@@ -30,7 +31,6 @@ interface CaseResult {
   timedOut: boolean;
   expected?: string;
   actual?: string;
-  stderr?: string;
 }
 interface Grade {
   passed: number;
@@ -47,6 +47,15 @@ interface RunResult {
   durationMs: number;
 }
 
+function examStartMs(): number {
+  const KEY = 'codeunical:examStart';
+  const saved = localStorage.getItem(KEY);
+  if (saved) return Number(saved);
+  const now = Date.now();
+  localStorage.setItem(KEY, String(now));
+  return now;
+}
+
 export default function ExamPage() {
   const [problem, setProblem] = useState<Problem | null>(null);
   const [code, setCode] = useState('');
@@ -56,11 +65,13 @@ export default function ExamPage() {
   const [output, setOutput] = useState<RunResult | null>(null);
   const [grade, setGrade] = useState<Grade | null>(null);
   const [tab, setTab] = useState<'run' | 'grade'>('grade');
-  const [violations, setViolations] = useState(0);
+  const [pasteHits, setPasteHits] = useState(0);
   const [secondsLeft, setSecondsLeft] = useState(EXAM_SECONDS);
-  const bump = useCallback(() => setViolations((v) => v + 1), []);
+  const startRef = useRef(0);
+  const proctor = useProctor();
 
   useEffect(() => {
+    startRef.current = examStartMs();
     fetch(`${API}/problems/random`)
       .then((r) => r.json())
       .then((p: Problem) => {
@@ -69,6 +80,17 @@ export default function ExamPage() {
         setCode(draft ?? p.starterCode);
       })
       .catch(() => undefined);
+  }, []);
+
+  // timer persisten (tak reset saat mengulang)
+  useEffect(() => {
+    const tick = () => {
+      const elapsed = Math.floor((Date.now() - startRef.current) / 1000);
+      setSecondsLeft(Math.max(0, EXAM_SECONDS - elapsed));
+    };
+    tick();
+    const t = setInterval(tick, 1000);
+    return () => clearInterval(t);
   }, []);
 
   useEffect(() => {
@@ -81,18 +103,21 @@ export default function ExamPage() {
     return () => clearTimeout(t);
   }, [code, problem]);
 
+  // saat kicked: keluar fullscreen + reload (mengulang; timer & examStart tetap)
   useEffect(() => {
-    if (secondsLeft <= 0) return;
-    const t = setInterval(() => setSecondsLeft((s) => Math.max(0, s - 1)), 1000);
-    return () => clearInterval(t);
-  }, [secondsLeft]);
+    if (!proctor.kicked) return;
+    if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined);
+    const t = setTimeout(() => window.location.reload(), 4000);
+    return () => clearTimeout(t);
+  }, [proctor.kicked]);
 
   const onMount: OnMount = (editor, monaco) => {
     const dom = editor.getDomNode();
     const block = (e: Event) => {
       e.preventDefault();
       e.stopPropagation();
-      bump();
+      setPasteHits((v) => v + 1);
+      proctor.logPaste();
     };
     ['paste', 'copy', 'cut', 'contextmenu', 'drop', 'dragover'].forEach((ev) =>
       dom?.addEventListener(ev, block, true),
@@ -108,9 +133,16 @@ export default function ExamPage() {
       if (blocked) {
         e.preventDefault();
         e.stopPropagation();
-        bump();
+        setPasteHits((v) => v + 1);
+        proctor.logPaste();
       }
     });
+  };
+
+  const onChange = (v: string | undefined) => {
+    const val = v ?? '';
+    setCode(val);
+    proctor.recordKeystroke(val);
   };
 
   const run = async () => {
@@ -153,6 +185,7 @@ export default function ExamPage() {
   const mm = String(Math.floor(secondsLeft / 60)).padStart(2, '0');
   const ss = String(secondsLeft % 60).padStart(2, '0');
   const timeUp = secondsLeft <= 0;
+  const locked = timeUp || !proctor.active || proctor.kicked;
 
   return (
     <div className="flex h-screen flex-col bg-[#0d1117] text-slate-200">
@@ -165,23 +198,24 @@ export default function ExamPage() {
             {saved ? '✓ tersimpan' : '… menyimpan'}
           </span>
           <span className="text-slate-500">
-            paste: <span className="font-mono text-rose-400">{violations}</span>
+            strike: <span className="font-mono text-rose-400">{proctor.strikes}/3</span>
           </span>
-          <span
-            className={`rounded px-2 py-1 font-mono ${timeUp ? 'bg-rose-950 text-rose-400' : 'bg-slate-800'}`}
-          >
+          <span className="text-slate-500">
+            paste: <span className="font-mono text-amber-400">{pasteHits}</span>
+          </span>
+          <span className={`rounded px-2 py-1 font-mono ${timeUp ? 'bg-rose-950 text-rose-400' : 'bg-slate-800'}`}>
             ⏱ {mm}:{ss}
           </span>
           <button
             onClick={run}
-            disabled={running || timeUp || !problem}
+            disabled={running || locked}
             className="rounded border border-slate-700 px-3 py-1.5 transition hover:bg-slate-800 disabled:opacity-40"
           >
             {running ? '…' : '▶ Run'}
           </button>
           <button
             onClick={submit}
-            disabled={submitting || timeUp || !problem}
+            disabled={submitting || locked}
             className="rounded bg-violet-600 px-4 py-1.5 font-medium text-white transition hover:bg-violet-500 disabled:opacity-40"
           >
             {submitting ? 'menilai…' : '✓ Submit'}
@@ -190,7 +224,6 @@ export default function ExamPage() {
       </header>
 
       <div className="grid flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[320px_1fr_360px]">
-        {/* Panel soal */}
         <aside className="min-h-0 overflow-auto border-r border-slate-800 p-5">
           {!problem ? (
             <p className="text-slate-500">Memuat soal…</p>
@@ -216,22 +249,19 @@ export default function ExamPage() {
                     <pre className="whitespace-pre-wrap text-emerald-400">{c.expected}</pre>
                   </div>
                 ))}
-                <p className="font-mono text-xs text-slate-600">
-                  + {problem.hiddenCount} uji tersembunyi
-                </p>
+                <p className="font-mono text-xs text-slate-600">+ {problem.hiddenCount} uji tersembunyi</p>
               </div>
             </>
           )}
         </aside>
 
-        {/* Editor */}
-        <div className="min-h-0 border-r border-slate-800">
+        <div className="relative min-h-0 border-r border-slate-800">
           <Editor
             height="100%"
             defaultLanguage="python"
             theme="vs-dark"
             value={code}
-            onChange={(v) => setCode(v ?? '')}
+            onChange={onChange}
             onMount={onMount}
             options={{
               fontSize: 14,
@@ -239,24 +269,17 @@ export default function ExamPage() {
               contextmenu: false,
               fontFamily: "'JetBrains Mono','Fira Code',monospace",
               scrollBeyondLastLine: false,
-              readOnly: timeUp,
+              readOnly: locked,
             }}
           />
         </div>
 
-        {/* Panel hasil */}
         <div className="flex min-h-0 flex-col bg-[#0b0e14]">
           <div className="flex border-b border-slate-800 font-mono text-xs">
-            <button
-              onClick={() => setTab('grade')}
-              className={`px-4 py-2 ${tab === 'grade' ? 'bg-slate-800 text-white' : 'text-slate-500'}`}
-            >
+            <button onClick={() => setTab('grade')} className={`px-4 py-2 ${tab === 'grade' ? 'bg-slate-800 text-white' : 'text-slate-500'}`}>
               HASIL
             </button>
-            <button
-              onClick={() => setTab('run')}
-              className={`px-4 py-2 ${tab === 'run' ? 'bg-slate-800 text-white' : 'text-slate-500'}`}
-            >
+            <button onClick={() => setTab('run')} className={`px-4 py-2 ${tab === 'run' ? 'bg-slate-800 text-white' : 'text-slate-500'}`}>
               OUTPUT
             </button>
           </div>
@@ -266,17 +289,13 @@ export default function ExamPage() {
                 <span className="text-slate-600">Klik ✓ Submit untuk dinilai.</span>
               ) : (
                 <>
-                  <div
-                    className={`mb-3 text-lg font-bold ${grade.passed === grade.total ? 'text-emerald-400' : 'text-amber-400'}`}
-                  >
+                  <div className={`mb-3 text-lg font-bold ${grade.passed === grade.total ? 'text-emerald-400' : 'text-amber-400'}`}>
                     lolos {grade.passed}/{grade.total} · skor {grade.score}/{grade.maxScore}
                   </div>
                   {grade.results.map((r) => (
                     <div key={r.order} className="mb-1">
-                      <span className={r.passed ? 'text-emerald-400' : 'text-rose-400'}>
-                        {r.passed ? '✓' : '✗'}
-                      </span>{' '}
-                      uji #{r.order} {r.hidden && <span className="text-slate-600">🔒</span>}
+                      <span className={r.passed ? 'text-emerald-400' : 'text-rose-400'}>{r.passed ? '✓' : '✗'}</span> uji #{r.order}{' '}
+                      {r.hidden && <span className="text-slate-600">🔒</span>}
                       {r.timedOut && <span className="text-amber-400"> (timeout)</span>}
                       {!r.hidden && !r.passed && (
                         <div className="ml-4 text-xs text-slate-500">
@@ -296,9 +315,7 @@ export default function ExamPage() {
                   {output.stdout && <pre className="whitespace-pre-wrap text-slate-200">{output.stdout}</pre>}
                   {output.stderr && <pre className="whitespace-pre-wrap text-rose-400">{output.stderr}</pre>}
                   {output.timedOut && <pre className="text-amber-400">⏱ melebihi batas waktu.</pre>}
-                  <div className="mt-3 text-xs text-slate-600">
-                    exit={String(output.exitCode)} · {output.durationMs} ms
-                  </div>
+                  <div className="mt-3 text-xs text-slate-600">exit={String(output.exitCode)} · {output.durationMs} ms</div>
                 </>
               ))}
           </div>
@@ -306,8 +323,52 @@ export default function ExamPage() {
       </div>
 
       <footer className="border-t border-slate-800 px-5 py-1.5 text-center font-mono text-[11px] text-slate-600">
-        🛡️ ketik manual · paste diblokir · dijalankan di sandbox terisolasi
+        🛡️ ketik manual · paste diblokir · layar penuh dipantau · dijalankan di sandbox
       </footer>
+
+      {/* Overlay mulai ujian (gesture untuk fullscreen) */}
+      {problem && !proctor.active && !proctor.kicked && (
+        <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-[#0d1117]/95 text-center">
+          <h2 className="text-2xl font-bold text-white">Siap mengerjakan?</h2>
+          <p className="mt-2 max-w-md text-slate-400">
+            Ujian berjalan dalam <b>layar penuh</b> dan dipantau. Keluar dari layar ujian dihitung
+            pelanggaran — <b>3 pelanggaran = didiskualifikasi</b> dan mengulang.
+          </p>
+          <button
+            onClick={() => proctor.start(problem.id)}
+            className="mt-6 rounded-lg bg-violet-600 px-7 py-3 font-medium text-white transition hover:bg-violet-500"
+          >
+            Mulai Ujian (Layar Penuh) →
+          </button>
+        </div>
+      )}
+
+      {/* Modal peringatan pelanggaran */}
+      {proctor.warning && !proctor.kicked && (
+        <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/60">
+          <div className="mx-4 max-w-md rounded-xl border border-amber-700 bg-[#161b22] p-6 text-center">
+            <p className="text-4xl">⚠️</p>
+            <p className="mt-3 text-slate-200">{proctor.warning}</p>
+            <button
+              onClick={proctor.dismissWarning}
+              className="mt-5 rounded bg-amber-600 px-5 py-2 font-medium text-white hover:bg-amber-500"
+            >
+              Kembali ke Ujian
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Overlay diskualifikasi */}
+      {proctor.kicked && (
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#0d1117] text-center">
+          <p className="text-5xl">🚫</p>
+          <h2 className="mt-4 text-2xl font-bold text-rose-400">Didiskualifikasi</h2>
+          <p className="mt-2 text-slate-400">
+            3 pelanggaran terlampaui. Ujian diulang dari awal (waktu tetap berjalan)…
+          </p>
+        </div>
+      )}
     </div>
   );
 }

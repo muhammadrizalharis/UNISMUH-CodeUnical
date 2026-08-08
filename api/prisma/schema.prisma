@@ -45,3 +45,36 @@ model Submission {
   detail    Json?
   createdAt DateTime @default(now())
 }
+
+model ExamAttempt {
+  id         String         @id @default(cuid())
+  problemId  String?
+  status     String         @default("active") // active | kicked | finished
+  strikes    Int            @default(0)
+  startedAt  DateTime       @default(now())
+  lastSeenAt DateTime       @default(now())
+  endedAt    DateTime?
+  events     ProctorEvent[]
+  keystrokes Keystroke[]
+}
+
+model ProctorEvent {
+  id        String      @id @default(cuid())
+  attemptId String
+  attempt   ExamAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  kind      String
+  at        DateTime    @default(now())
+  meta      Json?
+
+  @@index([attemptId])
+}
+
+model Keystroke {
+  id        String      @id @default(cuid())
+  attemptId String
+  attempt   ExamAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  t         Int // ms offset dari mulai attempt
+  value     String
+
+  @@index([attemptId])
+}
