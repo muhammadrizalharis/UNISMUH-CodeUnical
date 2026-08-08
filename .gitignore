@@ -1,0 +1,59 @@
+# ── Dependencies ──
+node_modules/
+.pnp/
+.pnp.js
+
+# ── Environment & Rahasia (JANGAN commit) ──
+.env
+.env.*
+!.env.example
+secrets/
+*.key
+*.pem
+*.crt
+*.p12
+
+# ── Build outputs ──
+dist/
+build/
+.next/
+out/
+*.tsbuildinfo
+src/generated/
+
+# ── Python ──
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# ── Data & volume (stack mandiri) ──
+data/
+pgdata/
+miniodata/
+redisdata/
+*.dump
+*.sql.gz
+
+# ── Bukti kamera / rekaman ujian (SANGAT sensitif — jangan pernah ke git) ──
+recordings/
+proctor-evidence/
+*.webm
+
+# ── Model weights (besar) ──
+*.safetensors
+*.pt
+*.onnx
+models/
+
+# ── Log & OS ──
+*.log
+logs/
+.DS_Store
+Thumbs.db
+
+# ── Editor ──
+.vscode/
+.idea/
+*.swp
