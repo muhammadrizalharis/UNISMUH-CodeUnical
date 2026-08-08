@@ -1,159 +1,164 @@
 <div align="center">
 
-<img src="https://capsule-render.vercel.app/api?type=waving&color=0:6366F1,50:8B5CF6,100:EC4899&height=230&section=header&text=CodeUnical&fontSize=78&fontColor=ffffff&fontAlignY=38&desc=UNISMUH%20%E2%80%A2%20Ujian%20Koding%20Anti-Nyontek&descSize=20&descAlignY=60&animation=fadeIn" width="100%" />
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0:0f172a,50:4f46e5,100:7c3aed&height=200&section=header&text=CodeUnical&fontSize=72&fontColor=ffffff&fontAlignY=38&desc=UNISMUH%20%C2%B7%20Secure%20Coding%20Exam%20Platform&descSize=16&descAlignY=58&animation=fadeIn" width="100%" />
 
-<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=22&pause=800&duration=2800&color=8B5CF6&center=true&vCenter=true&width=820&lines=Ketik+manual+-+tanpa+copy+paste;Jalankan+langsung+-+dinilai+otomatis;Proctoring+berlapis+-+kamera+%26+anti-macro;Integritas+ujian%2C+dijaga+berlapis" alt="Typing SVG" />
+<img src="https://readme-typing-svg.demolab.com?font=JetBrains+Mono&weight=500&size=18&pause=1000&duration=2800&color=22C55E&center=true&vCenter=true&width=720&lines=%3E+ketik+manual+(no+paste);%3E+run+-%3E+auto-graded;%3E+proctored+-%3E+camera+%2B+anti-macro;%3E+integrity+enforced+by+design" alt="terminal" />
 
 <br/><br/>
 
-![status](https://img.shields.io/badge/status-in%20development-F59E0B?style=for-the-badge)
-![mode](https://img.shields.io/badge/mode-Lab%20%26%20Remote-6366F1?style=for-the-badge)
-![license](https://img.shields.io/badge/license-Proprietary-EF4444?style=for-the-badge)
-![for](https://img.shields.io/badge/for-UNISMUH-8B5CF6?style=for-the-badge)
-
-<h3>🛡️ <em>Ketik sendiri, atau ketahuan.</em></h3>
+![status](https://img.shields.io/badge/status-in__development-F59E0B?style=flat-square&labelColor=0f172a)
+![mode](https://img.shields.io/badge/mode-Lab_%26_Remote-4f46e5?style=flat-square&labelColor=0f172a)
+![license](https://img.shields.io/badge/license-Proprietary-EF4444?style=flat-square&labelColor=0f172a)
+![unismuh](https://img.shields.io/badge/UNISMUH-Informatika-7c3aed?style=flat-square&labelColor=0f172a)
 
 </div>
 
-<img src="https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/rainbow.png" width="100%" />
+---
 
-## ✨ Apa itu CodeUnical?
+<div align="center">
 
-<img align="right" width="180" src="https://capsule-render.vercel.app/api?type=soft&color=0:8B5CF6,100:EC4899&height=120&section=header&text=%3C%2F%3E&fontSize=60&fontColor=ffffff&fontAlignY=52" />
+```console
+$ codeunical exam:start --lang python --mode lab
+  ✓ editor locked        ✓ paste blocked        ✓ camera armed
+  ✓ fullscreen forced    ✓ keystrokes logged    ✓ similarity check
+→ Ketik kodemu. Setiap ketukan direkam. Good luck.
+```
 
-**CodeUnical** ( **Code** + **Uni** + **ICAL** ) adalah platform ujian & praktikum pemrograman berbasis web untuk kampus.
+<kbd>Ctrl</kbd> + <kbd>V</kbd> ❌ &nbsp;&nbsp; <kbd>Ctrl</kbd> + <kbd>C</kbd> ❌ &nbsp;&nbsp; <kbd>Manual&nbsp;Typing</kbd> ✅
 
-Mahasiswa **wajib mengetik kode secara manual** (tanpa copy-paste), kode **dijalankan langsung** di server, dinilai **otomatis** lewat *test case*, dan seluruh sesi **diawasi berlapis** demi menjaga integritas akademik.
+</div>
 
-> Mendukung banyak bahasa (**Python · SQL · C++ · HTML · …**) secara *pluggable* — tinggal pasang runner bahasa baru tanpa mengubah inti.
+---
 
-<br clear="right"/>
+## `~/` Apa itu CodeUnical?
 
-## 🎯 Kenapa dibangun?
+**`CodeUnical`** = `Code` + `Uni` + `ICAL` — platform ujian & praktikum pemrograman berbasis web untuk kampus.
 
-<table>
-<tr>
-<td width="50%">
+Mahasiswa **wajib mengetik kode secara manual** (tanpa copy-paste), kode **dijalankan langsung** di sandbox terisolasi, dinilai **otomatis** lewat *test case*, dan seluruh sesi **diawasi berlapis**.
 
-**Masalah**
-- 🕳️ Ujian koding mudah dicurangi (paste, buka tab, contek teman)
-- ⏳ Dosen menghabiskan berjam-jam koreksi kode manual
-- ❓ Tidak ada bukti kepemilikan ("ini beneran kamu yang ngetik?")
-- 💸 Tool asing mahal & tak terintegrasi kampus
+> Multi-bahasa *pluggable* — `Python` · `SQL` · `C++` · `HTML` · … — tambah runner tanpa mengubah inti.
 
-</td>
-<td width="50%">
+---
 
-**Solusi CodeUnical**
-- ⌨️ Ketik manual + anti-macro + replay ketikan
-- 🤖 Penilaian otomatis via test case
-- 🎥 Proctoring berlapis (jendela + kamera)
-- 🏛️ Mandiri di server kampus, data tak ke cloud
-
-</td>
-</tr>
-</table>
-
-## 🚀 Fitur Unggulan
+## `>` Fitur Unggulan
 
 | | Fitur | Deskripsi |
 |:--:|---|---|
-| ⌨️ | **Ketik Manual** | Blokir semua paste (Ctrl+V, klik-kanan, drag) + deteksi ritme ketikan (anti-macro) |
-| 🎬 | **Replay Ketikan** | Dosen memutar ulang cara kode diketik dari nol — bukti kepemilikan |
-| 🖥️ | **Fullscreen Terkunci** | Deteksi keluar tab, split-screen, monitor kedua |
-| ⚡ | **Eksekusi Real-time** | Kode dijalankan di sandbox terisolasi, output instan |
-| 🎯 | **Auto-Grade** | Uji lawan test case tersembunyi + nilai parsial |
-| 📷 | **Proctoring Kamera** | Deteksi wajah hilang / wajah asing / HP (event-based recording) |
-| 🔍 | **Deteksi Kemiripan** | Bandingkan struktur kode (AST + fingerprint), bukan sekadar teks |
-| 📊 | **Dashboard Live** | Dosen pantau semua mahasiswa realtime + drill-down per individu |
+| `⌨️` | **Manual Typing** | Blokir semua paste + deteksi ritme ketikan (anti-macro) |
+| `🎬` | **Keystroke Replay** | Putar ulang cara kode diketik dari nol — bukti kepemilikan |
+| `🖥️` | **Locked Fullscreen** | Deteksi keluar tab, split-screen, monitor kedua |
+| `⚡` | **Live Execution** | Sandbox terisolasi, output instan |
+| `🎯` | **Auto-Grade** | Uji lawan *hidden test case* + nilai parsial |
+| `📷` | **Camera Proctor** | Deteksi wajah hilang / wajah asing / HP |
+| `🔍` | **Code Similarity** | Bandingkan AST + *fingerprint*, bukan sekadar teks |
+| `📊` | **Live Dashboard** | Pantau semua mahasiswa realtime + drill-down per individu |
 
-## 🛡️ Sistem Anti-Nyontek Berlapis
+---
+
+## `#` Anti-Cheat Berlapis
 
 ```mermaid
 flowchart LR
-    A["⌨️ Blokir Paste"] --> B["🎵 Deteksi Ritme"]
-    B --> C["🎬 Replay Ketikan"]
-    C --> D["🖥️ Fullscreen + Tab/Monitor"]
-    D --> E["⚠️ Sistem 3-Strike"]
-    E --> F["📷 Kamera (wajah/HP)"]
-    F --> G["🔍 Kemiripan Kode"]
-    G --> H["✅ Integritas Terjaga"]
-    style H fill:#8B5CF6,color:#fff
-    style A fill:#6366F1,color:#fff
+    A["paste&nbsp;block"] --> B["rhythm&nbsp;detect"]
+    B --> C["keystroke&nbsp;replay"]
+    C --> D["fullscreen&nbsp;+&nbsp;tab/monitor"]
+    D --> E["3-strike"]
+    E --> F["camera&nbsp;(face/phone)"]
+    F --> G["code&nbsp;similarity"]
+    G --> H["integrity ✓"]
+    style H fill:#22c55e,color:#0f172a,stroke:#16a34a
+    style A fill:#4f46e5,color:#fff,stroke:#4338ca
 ```
 
 > **Filosofi:** menang bukan di *memblokir input*, tapi di **kombinasi lapisan**. Walau cara memasukkan kode tak terdeteksi, **hasil identik tetap ketahuan** lewat cek kemiripan.
 
-## 🎓 Mode Ujian
+---
+
+## `⌥` Mode Ujian
 
 <table>
 <tr>
-<td width="50%" align="center">
+<td width="50%" valign="top">
 
-### 🏫 Mode Lab
-Berpengawas, HP dikumpulkan, dosen keliling
+### `🏫` Lab
+Berpengawas · HP dikumpulkan · dosen keliling
 
-`Proctoring ringan` · `Face-recognition penguji` · `Paling andal (LAN langsung)`
+```diff
++ proctoring ringan
++ face-recognition penguji
++ paling andal (LAN langsung)
+```
 
 </td>
-<td width="50%" align="center">
+<td width="50%" valign="top">
 
-### 🌐 Mode Remote
-Dari rumah, tanpa pengawas fisik
+### `🌐` Remote
+Dari rumah · tanpa pengawas fisik
 
-`Kamera + Face + HP wajib` · `Semua lapisan aktif` · `Butuh domain kampus`
+```diff
+! kamera + face + HP wajib
+! semua lapisan aktif
+- butuh domain kampus
+```
 
 </td>
 </tr>
 </table>
 
-## 🧩 Arsitektur
+---
+
+## `⌘` Arsitektur
 
 ```mermaid
 flowchart TB
-    subgraph Klien
-        M["🎓 Mahasiswa<br/>Editor terkunci + kamera"]
-        D["🧑‍🏫 Dosen<br/>Dashboard live (bebas)"]
+    subgraph client["client"]
+        M["mahasiswa · editor terkunci"]
+        D["dosen · dashboard live"]
     end
-    subgraph Stack["🛡️ CodeUnical — Stack Mandiri"]
-        WEB["⚡ Next.js<br/>:47300"]
-        API["🔌 NestJS + WebSocket<br/>:47080"]
-        DB[("🐘 PostgreSQL<br/>:47432")]
-        REDIS[("🧠 Redis<br/>:47379")]
-        MINIO[("📦 MinIO<br/>:47900")]
-        SANDBOX["🧪 Sandbox<br/>Docker terisolasi"]
-        ML["👁️ Proctor/ML<br/>GPU L40S"]
+    subgraph stack["CodeUnical · stack mandiri"]
+        WEB["next.js :47300"]
+        API["nestjs + ws :47080"]
+        DB[("postgres :47432")]
+        REDIS[("redis :47379")]
+        MINIO[("minio :47900")]
+        SBX["sandbox · docker"]
+        ML["proctor/ml · gpu"]
     end
-    M <-->|WSS| API
-    D <-->|WSS| API
+    M <-->|wss| API
+    D <-->|wss| API
     WEB --> API
     API --> DB
     API --> REDIS
     API --> MINIO
-    API --> SANDBOX
+    API --> SBX
     API --> ML
-    style Stack fill:#1e1b4b,color:#fff
+    style stack fill:#0f172a,color:#e2e8f0,stroke:#4f46e5
+    style client fill:#1e1b4b,color:#e2e8f0,stroke:#7c3aed
 ```
 
-## 🔄 Alur Ujian
+---
+
+## `↻` Alur Ujian
 
 ```mermaid
 flowchart LR
-    A["🔐 Login"] --> B["📋 Pilih ujian"]
-    B --> C["📷 Izin kamera<br/>+ persetujuan"]
-    C --> D["🖥️ Fullscreen"]
-    D --> E["🎲 Soal acak"]
-    E --> F["⌨️ Ketik manual"]
-    F --> G["▶️ Jalankan"]
+    A["login"] --> B["pilih ujian"]
+    B --> C["izin kamera"]
+    C --> D["fullscreen"]
+    D --> E["soal acak"]
+    E --> F["ketik manual"]
+    F --> G["run"]
     G --> F
-    F --> H["📤 Submit"]
-    H --> I["🎯 Auto-grade"]
-    I --> J["✅ Nilai"]
-    style J fill:#22C55E,color:#fff
-    style A fill:#6366F1,color:#fff
+    F --> H["submit"]
+    H --> I["auto-grade"]
+    I --> J["nilai ✓"]
+    style J fill:#22c55e,color:#0f172a,stroke:#16a34a
+    style A fill:#4f46e5,color:#fff,stroke:#4338ca
 ```
 
-## 🛠️ Tech Stack
+---
+
+## `⚙` Tech Stack
 
 <div align="center">
 
@@ -170,56 +175,64 @@ flowchart LR
 
 </div>
 
-## 📁 Struktur
+---
 
-```
+## `⛁` Struktur
+
+```text
 CodeUnical/
-├── README.md            ← dokumen ini
-├── docker-compose.yml   ← stack mandiri (postgres · redis · minio · api · web · sandbox)
-├── .env.example
-├── web/                 ← Next.js (editor mahasiswa + dashboard dosen)
-├── api/                 ← NestJS (REST + WebSocket + auth + orkestrasi)
-├── sandbox/             ← executor eksekusi kode (Docker per bahasa)
-├── proctor/             ← layanan Python (YOLO · face recognition · kemiripan kode)
-├── prisma/              ← skema & migrasi database
-└── docs/                ← dokumentasi tambahan
+├── web/          next.js — editor mahasiswa + dashboard dosen
+├── api/          nestjs — rest + websocket + auth + orkestrasi
+├── sandbox/      executor eksekusi kode (docker per bahasa)
+├── proctor/      python — yolo · face recognition · code similarity
+├── prisma/       skema & migrasi database
+├── docs/         BLUEPRINT.md (cetak biru detail)
+└── docker-compose.yml
 ```
 
-## 🗺️ Roadmap
+---
 
-- [x] 📐 Cetak biru & arsitektur
-- [ ] 🧱 **MVP** — editor + ketik-manual + run Python + auto-save + timer
-- [ ] 🎯 Auto-grade + bank soal + randomisasi
-- [ ] 🛡️ Proctoring jendela + 3-strike + replay ketikan
-- [ ] 🔍 Kemiripan kode + dashboard dosen live
-- [ ] 📷 Kamera + face recognition penguji
-- [ ] 🌐 Multi-bahasa (SQL · C++ · HTML)
+## `☑` Roadmap
 
-## ⚖️ Batasan Jujur
+```text
+[x] cetak biru & arsitektur
+[ ] MVP — editor + manual-typing + run python + autosave + timer
+[ ] auto-grade + bank soal + randomisasi
+[ ] proctoring jendela + 3-strike + keystroke replay
+[ ] code similarity + dashboard dosen live
+[ ] camera + face recognition penguji
+[ ] multi-bahasa (sql · c++ · html)
+```
 
-> Agar ekspektasi lurus — CodeUnical membuat kecurangan **praktis sangat sulit**, bukan mustahil secara matematis.
+---
 
-- Blokir paste menahan mayoritas; macro yang "mengetik" bisa lolos → ditutup **deteksi ritme + replay + kemiripan kode**.
-- Kamera = penekan kuat, bukan tembok → mode Lab **kumpulkan HP** secara fisik.
-- 100% anti-nyontek hanya tercapai dengan **ujian lab terkontrol / proctoring**.
+## `!` Batasan Jujur
 
-## 🔒 Keamanan & Privasi
+> CodeUnical membuat kecurangan **praktis sangat sulit**, bukan mustahil secara matematis.
 
-- 🏛️ **Isolasi penuh** — Docker/DB/sandbox/port sendiri, tidak menumpang proyek lain.
-- 🔐 **Data biometrik & rekaman** — persetujuan eksplisit, penyimpanan aman, **retensi terbatas + auto-hapus**.
-- 🖥️ **Sandbox** — jaringan internal, batas CPU/RAM/waktu, non-root, cap-drop.
-- ✅ Enforcement nilai/strike **di sisi server** (client tak dipercaya).
+- Blokir paste menahan mayoritas; *macro* bisa lolos → ditutup **ritme + replay + similarity**.
+- Kamera = penekan kuat, bukan tembok → mode Lab **kumpulkan HP** fisik.
+- 100% anti-nyontek hanya via **ujian lab terkontrol / proctoring**.
 
-<img src="https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/rainbow.png" width="100%" />
+---
+
+## `🔒` Keamanan & Privasi
+
+- **Isolasi penuh** — docker/db/sandbox/port sendiri, tak menumpang proyek lain.
+- **Data biometrik & rekaman** — persetujuan eksplisit, penyimpanan aman, retensi terbatas + auto-hapus.
+- **Sandbox** — jaringan internal, batas cpu/ram/waktu, non-root, cap-drop.
+- **Enforcement** nilai/strike di sisi server (client tak dipercaya).
+
+<br/>
 
 <div align="center">
 
-**Dibuat dengan 🛡️ untuk integritas akademik — UNISMUH CodeUnical**
+`built for academic integrity`
 
-**Pengembang:** Muhammad Rizal Haris
+**Pengembang** — Muhammad Rizal Haris
 
-<em>© 2026 Muhammad Rizal Haris · Proprietary & Confidential</em>
+<sub>© 2026 Muhammad Rizal Haris · Proprietary & Confidential</sub>
 
-<img src="https://capsule-render.vercel.app/api?type=waving&color=0:EC4899,50:8B5CF6,100:6366F1&height=120&section=footer" width="100%" />
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0:7c3aed,50:4f46e5,100:0f172a&height=120&section=footer" width="100%" />
 
 </div>
