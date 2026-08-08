@@ -8,6 +8,14 @@ import { useCamera } from './useCamera';
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:47080';
 const EXAM_SECONDS = 30 * 60;
 
+// Peta id bahasa backend -> id bahasa Monaco (sebagian besar sama).
+const MONACO_LANG: Record<string, string> = {
+  python: 'python',
+  javascript: 'javascript',
+  cpp: 'cpp',
+  c: 'c',
+};
+
 interface PublicCase {
   stdin: string;
   expected: string;
@@ -156,7 +164,7 @@ export default function ExamPage() {
       const res = await fetch(`${API}/execute`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ language: 'python', code }),
+        body: JSON.stringify({ language: problem?.language ?? 'python', code }),
       });
       setOutput((await res.json()) as RunResult);
     } catch (e) {
@@ -187,6 +195,7 @@ export default function ExamPage() {
 
   const mm = String(Math.floor(secondsLeft / 60)).padStart(2, '0');
   const ss = String(secondsLeft % 60).padStart(2, '0');
+  const editorLang = MONACO_LANG[problem?.language ?? 'python'] ?? 'plaintext';
   const timeUp = secondsLeft <= 0;
   const locked = timeUp || !proctor.active || proctor.kicked;
 
@@ -280,6 +289,7 @@ export default function ExamPage() {
         <div className="relative min-h-0 border-r border-slate-800">
           <Editor
             height="100%"
+            language={editorLang}
             defaultLanguage="python"
             theme="vs-dark"
             value={code}
