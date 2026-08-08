@@ -1,5 +1,9 @@
-import { Body, Controller, Post, BadRequestException } from '@nestjs/common';
-import { ExecuteService } from './execute.service';
+import { Body, Controller, Get, Post, BadRequestException } from '@nestjs/common';
+import {
+  ExecuteService,
+  SUPPORTED_LANGUAGES,
+  LANGUAGE_LABELS,
+} from './execute.service';
 
 interface ExecuteDto {
   language?: string;
@@ -9,6 +13,11 @@ interface ExecuteDto {
 @Controller('execute')
 export class ExecuteController {
   constructor(private readonly execute: ExecuteService) {}
+
+  @Get('languages')
+  languages() {
+    return SUPPORTED_LANGUAGES.map((id) => ({ id, label: LANGUAGE_LABELS[id] }));
+  }
 
   @Post()
   async run(@Body() body: ExecuteDto) {
@@ -20,9 +29,11 @@ export class ExecuteController {
     if (code.length > 100_000) {
       throw new BadRequestException('Kode terlalu panjang.');
     }
-    if (language !== 'python') {
-      throw new BadRequestException(`Bahasa "${language}" belum didukung (MVP: Python).`);
+    if (!this.execute.isSupported(language)) {
+      throw new BadRequestException(
+        `Bahasa "${language}" belum didukung. Didukung: ${SUPPORTED_LANGUAGES.join(', ')}.`,
+      );
     }
-    return this.execute.runPython(code);
+    return this.execute.run(language, code);
   }
 }

@@ -40,7 +40,11 @@ function normalize(s: string): string {
 export class GradingService {
   constructor(private readonly execute: ExecuteService) {}
 
-  async grade(code: string, testCases: TestCaseInput[]): Promise<GradeResult> {
+  async grade(
+    code: string,
+    testCases: TestCaseInput[],
+    language = 'python',
+  ): Promise<GradeResult> {
     const ordered = [...testCases].sort((a, b) => a.order - b.order);
     const results: CaseResult[] = [];
     let passed = 0;
@@ -49,7 +53,7 @@ export class GradingService {
 
     for (const tc of ordered) {
       maxScore += tc.points;
-      const out = await this.execute.runPython(code, tc.stdin);
+      const out = await this.execute.run(language, code, tc.stdin);
       const actual = normalize(out.stdout);
       const ok =
         !out.timedOut && out.exitCode === 0 && actual === normalize(tc.expected);

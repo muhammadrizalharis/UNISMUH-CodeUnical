@@ -63,6 +63,7 @@ export class ProblemsService {
         hidden: t.hidden,
         order: t.order,
       })),
+      p.language,
     );
 
     await this.prisma.submission.create({

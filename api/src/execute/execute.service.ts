@@ -16,38 +16,118 @@ export interface ExecuteResult {
 const DOCKER_PARTS = (process.env.DOCKER_CMD ?? 'sudo -n docker').split(' ');
 const DOCKER_BIN = DOCKER_PARTS[0];
 const DOCKER_BASE = DOCKER_PARTS.slice(1);
-const PYTHON_IMAGE = process.env.SANDBOX_PYTHON_IMAGE ?? 'python:3.12-slim';
 const TIMEOUT_MS = Number(process.env.SANDBOX_TIMEOUT_SECONDS ?? 15) * 1000;
 const MEMORY = process.env.SANDBOX_MEMORY ?? '512m';
 const MAX_OUTPUT = 100_000;
 
+interface LangSpec {
+  /** Nama tampil untuk pesan/UI. */
+  label: string;
+  /** Image Docker sandbox (baked-in compiler/runtime, tanpa jaringan). */
+  image: string;
+  /** Nama berkas sumber di dalam /work. */
+  file: string;
+  /** Perintah yang dijalankan di dalam container. */
+  cmd: string[];
+  /** Env tambahan (-e KEY=VAL). */
+  env: string[];
+  /** Opsi mount /tmp. Bahasa terkompilasi butuh `exec` agar biner bisa dijalankan. */
+  tmpfs: string;
+}
+
+// Registry bahasa — TAMBAH BAHASA = tambah 1 entri di sini + `docker pull` image-nya.
+// Semua berjalan di sandbox yang sama: tanpa jaringan, root read-only, non-root (nobody),
+// cap-drop ALL, no-new-privileges, batas memori/cpu/pid, timeout global.
+const LANGS: Record<string, LangSpec> = {
+  python: {
+    label: 'Python 3.12',
+    image: process.env.SANDBOX_PYTHON_IMAGE ?? 'python:3.12-slim',
+    file: 'main.py',
+    cmd: ['python', '/work/main.py'],
+    env: ['PYTHONDONTWRITEBYTECODE=1', 'PYTHONUNBUFFERED=1'],
+    tmpfs: 'size=64m',
+  },
+  javascript: {
+    label: 'JavaScript (Node 22)',
+    image: process.env.SANDBOX_NODE_IMAGE ?? 'node:22-slim',
+    file: 'main.js',
+    cmd: ['node', '/work/main.js'],
+    env: ['NODE_OPTIONS=--max-old-space-size=256'],
+    tmpfs: 'size=64m',
+  },
+  cpp: {
+    label: 'C++ (GCC 13, C++17)',
+    image: process.env.SANDBOX_GCC_IMAGE ?? 'gcc:13',
+    file: 'main.cpp',
+    // Compile ke tmpfs lalu exec; jika gagal, stderr g++ ikut tertangkap dan exit != 0.
+    cmd: ['sh', '-c', 'g++ -O2 -pipe -std=c++17 -o /tmp/a.out /work/main.cpp && exec /tmp/a.out'],
+    env: [],
+    tmpfs: 'size=256m,exec',
+  },
+  c: {
+    label: 'C (GCC 13, C11)',
+    image: process.env.SANDBOX_GCC_IMAGE ?? 'gcc:13',
+    file: 'main.c',
+    cmd: ['sh', '-c', 'gcc -O2 -pipe -std=c11 -o /tmp/a.out /work/main.c && exec /tmp/a.out'],
+    env: [],
+    tmpfs: 'size=256m,exec',
+  },
+};
+
+export const SUPPORTED_LANGUAGES = Object.keys(LANGS);
+export const LANGUAGE_LABELS: Record<string, string> = Object.fromEntries(
+  Object.entries(LANGS).map(([k, v]) => [k, v.label]),
+);
+
 @Injectable()
 export class ExecuteService {
-  async runPython(code: string, stdin = ''): Promise<ExecuteResult> {
+  isSupported(language: string): boolean {
+    return Object.prototype.hasOwnProperty.call(LANGS, language);
+  }
+
+  /** Eksekusi kode pada bahasa apa pun yang terdaftar di registry. */
+  async run(language: string, code: string, stdin = ''): Promise<ExecuteResult> {
+    const spec = LANGS[language];
+    if (!spec) {
+      return {
+        stdout: '',
+        stderr: `[executor] Bahasa "${language}" tidak didukung.`,
+        exitCode: -1,
+        timedOut: false,
+        durationMs: 0,
+      };
+    }
     const dir = await mkdtemp(join(tmpdir(), 'codeunical-'));
     const name = `codeunical-exec-${randomUUID()}`;
     const started = Date.now();
     try {
       await chmod(dir, 0o755);
-      await writeFile(join(dir, 'main.py'), code, 'utf8');
-      await chmod(join(dir, 'main.py'), 0o644);
+      await writeFile(join(dir, spec.file), code, 'utf8');
+      await chmod(join(dir, spec.file), 0o644);
+      const envArgs = spec.env.flatMap((e) => ['-e', e]);
       const runArgs = [
         ...DOCKER_BASE,
         'run', '--rm', '-i', '--name', name,
         '--network', 'none',
         '--memory', MEMORY, '--cpus', '1', '--pids-limit', '128',
-        '--read-only', '--tmpfs', '/tmp:size=64m',
+        '--read-only', '--tmpfs', `/tmp:${spec.tmpfs}`,
         '--cap-drop', 'ALL', '--security-opt', 'no-new-privileges',
         '--user', '65534:65534',
-        '-e', 'HOME=/tmp', '-e', 'PYTHONDONTWRITEBYTECODE=1',
+        '-e', 'HOME=/tmp',
+        ...envArgs,
         '-v', `${dir}:/work:ro`, '-w', '/work',
-        PYTHON_IMAGE, 'python', '/work/main.py',
+        spec.image, ...spec.cmd,
       ];
       const result = await this.spawnCollect(runArgs, name, stdin);
       return { ...result, durationMs: Date.now() - started };
     } finally {
       await rm(dir, { recursive: true, force: true }).catch(() => undefined);
     }
+  }
+
+  /** Kompatibilitas lama: pembungkus tipis ke run('python', ...). */
+  async runPython(code: string, stdin = ''): Promise<ExecuteResult> {
+    return this.run('python', code, stdin);
   }
 
   private spawnCollect(
