@@ -33,7 +33,7 @@ export function ReplayModal({
   const lastRef = useRef(0);
 
   useEffect(() => {
-    fetch(`${API}/attempts/${attemptId}/replay`)
+    fetch(`${API}/attempts/${attemptId}/replay`, { credentials: 'include' })
       .then((r) => r.json())
       .then(setData)
       .catch(() => undefined);

@@ -30,7 +30,7 @@ export default function Home() {
           berlapis.
         </p>
         <Link
-          href="/exam"
+          href="/welcome"
           className="mt-9 inline-flex items-center gap-2 rounded-lg bg-violet-600 px-7 py-3 font-medium text-white transition hover:-translate-y-0.5 hover:bg-violet-500"
         >
           Masuk →
