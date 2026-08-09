@@ -62,4 +62,9 @@ export class StorageService implements OnModuleInit {
     for await (const c of stream) chunks.push(c as Buffer);
     return Buffer.concat(chunks);
   }
+
+  async remove(key: string): Promise<void> {
+    if (!this.client) return;
+    await this.client.removeObject(this.bucket, key).catch(() => undefined);
+  }
 }

@@ -27,15 +27,33 @@ model Problem {
 }
 
 model Course {
-  id          String    @id @default(cuid())
+  id          String     @id @default(cuid())
   code        String?
   name        String
   semester    Int?      // 1..8 utk katalog kurikulum; null utk MK tambahan dosen
   createdById String?   // null = katalog seed; selain itu = penguji pembuat
-  createdAt   DateTime  @default(now())
+  createdAt   DateTime   @default(now())
   problems    Problem[]
+  materials   Material[]
 
   @@index([semester])
+}
+
+model Material {
+  id          String   @id @default(cuid())
+  courseId    String
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title       String
+  filename    String
+  mimeType    String
+  size        Int
+  objectKey   String?  // key MinIO; null bila fallback DB
+  data        Bytes?   // fallback isi file bila MinIO nonaktif
+  text        String?  // teks terekstrak (utk generate soal AI, diisi Tahap E)
+  createdById String?
+  createdAt   DateTime @default(now())
+
+  @@index([courseId])
 }
 
 model TestCase {

@@ -7,6 +7,7 @@ import { ProblemsModule } from './problems/problems.module';
 import { ProctorModule } from './proctor/proctor.module';
 import { MonitorModule } from './monitor/monitor.module';
 import { CoursesModule } from './courses/courses.module';
+import { MaterialsModule } from './materials/materials.module';
 import { AuthModule } from './auth/auth.module';
 
 @Module({
@@ -18,6 +19,7 @@ import { AuthModule } from './auth/auth.module';
     ProctorModule,
     MonitorModule,
     CoursesModule,
+    MaterialsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
