@@ -26,6 +26,11 @@ export function useCamera(attemptId: string | null, enabled: boolean) {
   const [status, setStatus] = useState<CamStatus>('off');
   const [faces, setFaces] = useState(1);
   const [detReady, setDetReady] = useState(false);
+  const [vision, setVision] = useState<{
+    violations: string[];
+    faceCount: number;
+    phone: boolean;
+  } | null>(null);
 
   const logCamEvent = useCallback(
     (kind: string) => {
@@ -39,27 +44,31 @@ export function useCamera(attemptId: string | null, enabled: boolean) {
     [attemptId],
   );
 
+  const grabFrame = useCallback((w = 320): string | null => {
+    const v = videoRef.current;
+    if (!v || v.readyState < 2 || !v.videoWidth) return null;
+    let canvas = canvasRef.current;
+    if (!canvas) {
+      canvas = document.createElement('canvas');
+      canvasRef.current = canvas;
+    }
+    const h = Math.round((v.videoHeight / v.videoWidth) * w) || 240;
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+    ctx.drawImage(v, 0, 0, w, h);
+    return canvas.toDataURL('image/jpeg', 0.6);
+  }, []);
+
   const snapshot = useCallback(
     async (kind: string, minGapMs = 8000) => {
       if (!attemptId) return;
       const now = Date.now();
       if (now - (lastSnapRef.current[kind] ?? 0) < minGapMs) return;
       lastSnapRef.current[kind] = now;
-      const v = videoRef.current;
-      if (!v || v.readyState < 2 || !v.videoWidth) return;
-      let canvas = canvasRef.current;
-      if (!canvas) {
-        canvas = document.createElement('canvas');
-        canvasRef.current = canvas;
-      }
-      const w = 320;
-      const h = Math.round((v.videoHeight / v.videoWidth) * w) || 240;
-      canvas.width = w;
-      canvas.height = h;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-      ctx.drawImage(v, 0, 0, w, h);
-      const image = canvas.toDataURL('image/jpeg', 0.6);
+      const image = grabFrame(320);
+      if (!image) return;
       try {
         await fetch(`${API}/attempts/${attemptId}/snapshot`, {
           method: 'POST',
@@ -70,8 +79,33 @@ export function useCamera(attemptId: string | null, enabled: boolean) {
         // best-effort
       }
     },
-    [attemptId],
+    [attemptId, grabFrame],
   );
+
+  // Kirim 1 frame ke service GPU (deteksi HP + wajah asing/penguji). Opsional & best-effort.
+  const sendVision = useCallback(async () => {
+    if (!attemptId) return;
+    const image = grabFrame(480);
+    if (!image) return;
+    try {
+      const res = await fetch(`${API}/attempts/${attemptId}/vision`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image }),
+      });
+      if (!res.ok) return;
+      const d = await res.json();
+      if (d?.ok) {
+        setVision({
+          violations: d.violations ?? [],
+          faceCount: d.detected?.face_count ?? 0,
+          phone: !!d.detected?.phone_detected,
+        });
+      }
+    } catch {
+      // service GPU opsional
+    }
+  }, [attemptId, grabFrame]);
 
   // start kamera + inisialisasi detektor (sekali saat enabled)
   useEffect(() => {
@@ -179,6 +213,15 @@ export function useCamera(attemptId: string | null, enabled: boolean) {
     };
   }, [status, attemptId, snapshot, logCamEvent]);
 
+  // Kirim frame ke GPU /vision berkala (deteksi HP + face-rec penguji).
+  useEffect(() => {
+    if (status !== 'on' || !attemptId) return;
+    const interval = Number(process.env.NEXT_PUBLIC_VISION_INTERVAL_MS ?? 6000);
+    void sendVision();
+    const t = setInterval(() => void sendVision(), interval);
+    return () => clearInterval(t);
+  }, [status, attemptId, sendVision]);
+
   // bersih-bersih saat unmount
   useEffect(() => {
     return () => {
@@ -187,5 +230,5 @@ export function useCamera(attemptId: string | null, enabled: boolean) {
     };
   }, []);
 
-  return { videoRef, status, faces, detReady };
+  return { videoRef, status, faces, detReady, vision };
 }

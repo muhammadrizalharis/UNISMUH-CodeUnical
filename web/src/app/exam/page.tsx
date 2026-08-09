@@ -438,6 +438,24 @@ export default function ExamPage() {
               <span className="text-slate-500">berkala</span>
             )}
           </div>
+          {camera.vision && (
+            <div
+              className={`px-2 py-1 font-mono text-[10px] ${
+                camera.vision.phone || camera.vision.violations.length
+                  ? 'bg-rose-950/80 text-rose-300'
+                  : 'text-emerald-500'
+              }`}
+            >
+              GPU:{' '}
+              {camera.vision.phone
+                ? 'HP terdeteksi'
+                : camera.vision.violations.includes('multi_face')
+                  ? 'wajah asing'
+                  : camera.vision.violations.includes('face_absent')
+                    ? 'wajah hilang'
+                    : 'aman'}
+            </div>
+          )}
         </div>
       )}
 
