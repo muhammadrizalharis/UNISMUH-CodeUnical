@@ -139,9 +139,17 @@ const PROBLEMS: ProblemSpec[] = [
       'Baca dua bilangan bulat dari input (dipisah spasi), lalu cetak jumlahnya. Rust.',
     language: 'rust',
     difficulty: 'mudah',
-    starterCode:
-      'use std::io::*;\n\nfn main() {\n    let mut s = String::new();\n    stdin().read_line(&mut s).unwrap();\n    let v: Vec<i64> = s.trim().split_whitespace().map(|x| x.parse().unwrap()).collect();\n    // cetak jumlahnya di sini\n}\n',
     testCases: SUM_CASES,
+  },
+  {
+    title: 'Kartu Profil (HTML/CSS)',
+    description:
+      'Buat kartu profil sederhana: nama, inisial bulat, dan satu tombol. Gaya bebas (HTML + CSS + JS opsional). Pratinjau langsung tampil di kanan; penilaian oleh penguji.',
+    language: 'html',
+    difficulty: 'mudah',
+    starterCode:
+      '<!doctype html>\n<html lang="id">\n<head>\n<meta charset="utf-8" />\n<style>\n  /* tulis gaya di sini */\n  body { font-family: system-ui, sans-serif; padding: 24px; }\n</style>\n</head>\n<body>\n  <!-- buat kartu profil di sini -->\n  <h1>Halo!</h1>\n</body>\n</html>\n',
+    testCases: [],
   },
 ];
 
