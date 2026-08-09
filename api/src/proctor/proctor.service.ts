@@ -11,6 +11,8 @@ const VIOLATION_KINDS = new Set([
   'multimonitor',
 ]);
 const MAX_STRIKES = 3;
+// Service GPU proctoring (YOLO HP + face-rec). Opsional: bila mati, /vision degradasi anggun.
+const VISION_URL = process.env.PROCTOR_AI_URL ?? 'http://127.0.0.1:47610';
 
 interface EventIn {
   kind: string;
@@ -135,5 +137,52 @@ export class ProctorService {
       return buf ? { mime: s.mime, image: buf } : null;
     }
     return { mime: s.mime, image: s.image ?? Buffer.alloc(0) };
+  }
+
+  /** Kirim 1 frame kamera ke service GPU; catat pelanggaran (HP/wajah) + simpan bukti. */
+  async visionCheck(attemptId: string, dataUrl: string) {
+    const m = /^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/.exec(dataUrl);
+    if (!m) return { ok: false, reason: 'bad_image' };
+    const buf = Buffer.from(m[2], 'base64');
+    if (buf.length > 3_000_000) return { ok: false, reason: 'too_large' };
+
+    let det: {
+      phone_detected?: boolean;
+      face_count?: number;
+      faces?: { examiner?: string | null }[];
+    };
+    try {
+      const fd = new FormData();
+      fd.append('file', new Blob([buf], { type: m[1] }), 'frame.jpg');
+      const res = await fetch(`${VISION_URL}/detect`, {
+        method: 'POST',
+        body: fd,
+        signal: AbortSignal.timeout(8000),
+      });
+      if (!res.ok) return { ok: false, reason: 'service_error' };
+      det = (await res.json()) as typeof det;
+    } catch {
+      return { ok: false, reason: 'service_unavailable' };
+    }
+
+    // Penguji ter-whitelist tidak dihitung "asing"; peserta = 1 wajah non-penguji dianggap normal.
+    const examinerFaces = (det.faces ?? []).filter((f) => f.examiner).length;
+    const nonExaminer = (det.face_count ?? 0) - examinerFaces;
+    const violations: string[] = [];
+    if (det.phone_detected) violations.push('phone_detected');
+    if ((det.face_count ?? 0) === 0) violations.push('face_absent');
+    else if (nonExaminer >= 2) violations.push('multi_face');
+
+    for (const kind of violations) {
+      await this.prisma.proctorEvent
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .create({ data: { attemptId, kind, meta: det as any } })
+        .catch(() => undefined);
+      await this.saveSnapshot(attemptId, kind, dataUrl).catch(() => undefined);
+    }
+    await this.prisma.examAttempt
+      .update({ where: { id: attemptId }, data: { lastSeenAt: new Date() } })
+      .catch(() => undefined);
+    return { ok: true, detected: det, violations };
   }
 }

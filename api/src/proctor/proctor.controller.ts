@@ -64,6 +64,12 @@ export class ProctorController {
     return this.proctor.saveSnapshot(id, body.kind, body.image);
   }
 
+  @Post(':id/vision')
+  vision(@Param('id') id: string, @Body() body: { image?: string }) {
+    if (!body?.image) throw new BadRequestException('image wajib.');
+    return this.proctor.visionCheck(id, body.image);
+  }
+
   @Get(':id/snapshots')
   @UseGuards(RolesGuard)
   @Roles('penguji', 'superadmin')
