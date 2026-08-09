@@ -121,6 +121,41 @@ export class AuthService implements OnModuleInit {
     return { id: u.id, email: u.email, name: u.name, role: u.role, status: u.status };
   }
 
+  /** Login via SSO (Authorization Code). Upsert user + tautkan ssoSub; hormati peran manual. */
+  async loginWithSso(profile: {
+    sub: string;
+    email: string;
+    name: string;
+    mappedRole: 'penguji' | 'peserta' | 'pending';
+  }): Promise<{ token: string; user: UserRow } | { pending: true; user: UserRow }> {
+    const email = profile.email.toLowerCase().trim();
+    let user =
+      (await this.prisma.user.findUnique({ where: { ssoSub: profile.sub } })) ??
+      (await this.prisma.user.findUnique({ where: { email } }));
+
+    if (!user) {
+      // Pengguna baru: peran mengikuti pemetaan klaim SSO; tak dikenal -> pending.
+      const status = profile.mappedRole === 'pending' ? 'pending' : 'active';
+      const role = profile.mappedRole === 'pending' ? 'peserta' : profile.mappedRole;
+      user = await this.prisma.user.create({
+        data: { email, name: profile.name, role, status, ssoSub: profile.sub },
+      });
+    } else {
+      // Sudah ada: tautkan ssoSub bila belum. JANGAN turunkan peran yang sudah diberikan manual.
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { ssoSub: user.ssoSub ?? profile.sub, lastLoginAt: new Date() },
+      });
+      user = await this.prisma.user.findUnique({ where: { id: user.id } });
+    }
+    if (!user) throw new UnauthorizedException('Gagal membuat sesi SSO.');
+    if (user.status === 'suspended') throw new UnauthorizedException('Akun dinonaktifkan.');
+    if (user.status === 'pending') return { pending: true, user: this.publicUser(user) };
+
+    const token = await this.createSession(user.id);
+    return { token, user: this.publicUser(user) };
+  }
+
   async createPenguji(email: string, name: string, password: string) {
     const created = await this.prisma.user.create({
       data: {
