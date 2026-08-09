@@ -96,3 +96,16 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 ## License
 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+
+## Generate soal AI dari materi (Tahap E)
+
+Endpoint `POST /courses/:courseId/generate-soal` (guarded penguji/superadmin) mengekstrak
+teks materi (pdf/docx/pptx/xlsx via `officeparser`, txt/md native) lalu meminta Ollama
+membuat draf soal (JSON). Draf DIKEMBALIKAN untuk ditinjau dosen (tidak langsung disimpan).
+
+Env (opsional, default ke lokal):
+
+- `OLLAMA_URL` — default `http://127.0.0.1:11434`
+- `OLLAMA_MODEL` — default `gemma4-16k:latest`
+
+Body: `{ materialIds: string[], count?: 1..5, language?: string, difficulty?: string }`.
