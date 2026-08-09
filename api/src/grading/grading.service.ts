@@ -51,29 +51,57 @@ export class GradingService {
     let score = 0;
     let maxScore = 0;
 
-    for (const tc of ordered) {
-      maxScore += tc.points;
-      const out = await this.execute.run(language, code, tc.stdin);
-      const actual = normalize(out.stdout);
-      const ok =
-        !out.timedOut && out.exitCode === 0 && actual === normalize(tc.expected);
-      if (ok) {
-        passed += 1;
-        score += tc.points;
+    // Compile SEKALI (bahasa terkompilasi); artefak dipakai ulang untuk tiap test case.
+    const prep = await this.execute.prepare(language, code);
+
+    // Gagal kompilasi -> seluruh test case gagal dengan pesan compile.
+    if (!prep.ok) {
+      for (const tc of ordered) {
+        maxScore += tc.points;
+        const r: CaseResult = {
+          order: tc.order,
+          hidden: tc.hidden,
+          passed: false,
+          points: tc.points,
+          timedOut: prep.result.timedOut,
+        };
+        if (!tc.hidden) {
+          r.expected = normalize(tc.expected);
+          r.actual = '';
+          r.stderr = prep.result.stderr;
+        }
+        results.push(r);
       }
-      const r: CaseResult = {
-        order: tc.order,
-        hidden: tc.hidden,
-        passed: ok,
-        points: tc.points,
-        timedOut: out.timedOut,
-      };
-      if (!tc.hidden) {
-        r.expected = normalize(tc.expected);
-        r.actual = actual;
-        r.stderr = out.stderr;
+      return { passed: 0, total: ordered.length, score: 0, maxScore, results };
+    }
+
+    try {
+      for (const tc of ordered) {
+        maxScore += tc.points;
+        const out = await this.execute.runPrepared(prep.ctx, tc.stdin);
+        const actual = normalize(out.stdout);
+        const ok =
+          !out.timedOut && out.exitCode === 0 && actual === normalize(tc.expected);
+        if (ok) {
+          passed += 1;
+          score += tc.points;
+        }
+        const r: CaseResult = {
+          order: tc.order,
+          hidden: tc.hidden,
+          passed: ok,
+          points: tc.points,
+          timedOut: out.timedOut,
+        };
+        if (!tc.hidden) {
+          r.expected = normalize(tc.expected);
+          r.actual = actual;
+          r.stderr = out.stderr;
+        }
+        results.push(r);
       }
-      results.push(r);
+    } finally {
+      await this.execute.cleanup(prep.ctx);
     }
 
     return { passed, total: ordered.length, score, maxScore, results };
