@@ -17,9 +17,25 @@ model Problem {
   setupSql    String?      // untuk soal SQL: DDL + seed (ditampilkan ke peserta)
   difficulty  String       @default("mudah") // mudah | sedang | sulit
   timeLimitMs Int          @default(15000)
+  courseId    String?
+  course      Course?      @relation(fields: [courseId], references: [id], onDelete: SetNull)
   createdAt   DateTime     @default(now())
   testCases   TestCase[]
   submissions Submission[]
+
+  @@index([courseId])
+}
+
+model Course {
+  id          String    @id @default(cuid())
+  code        String?
+  name        String
+  semester    Int?      // 1..8 utk katalog kurikulum; null utk MK tambahan dosen
+  createdById String?   // null = katalog seed; selain itu = penguji pembuat
+  createdAt   DateTime  @default(now())
+  problems    Problem[]
+
+  @@index([semester])
 }
 
 model TestCase {

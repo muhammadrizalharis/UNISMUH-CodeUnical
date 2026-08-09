@@ -6,6 +6,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { ProblemsModule } from './problems/problems.module';
 import { ProctorModule } from './proctor/proctor.module';
 import { MonitorModule } from './monitor/monitor.module';
+import { CoursesModule } from './courses/courses.module';
 import { AuthModule } from './auth/auth.module';
 
 @Module({
@@ -16,6 +17,7 @@ import { AuthModule } from './auth/auth.module';
     ProblemsModule,
     ProctorModule,
     MonitorModule,
+    CoursesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

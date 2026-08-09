@@ -27,6 +27,7 @@ export class RolesGuard implements CanActivate {
       .switchToHttp()
       .getRequest<Request & { cookies?: Record<string, string> }>();
     const user = await this.auth.getSessionUser(req.cookies?.['codeunical_session']);
+    (req as unknown as { user?: unknown }).user = user ?? undefined;
     if (roles.length === 0) return true;
     if (!user) throw new UnauthorizedException();
     if (!roles.includes(user.role)) throw new ForbiddenException();
