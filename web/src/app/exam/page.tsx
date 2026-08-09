@@ -20,6 +20,7 @@ const MONACO_LANG: Record<string, string> = {
   php: 'php',
   ruby: 'ruby',
   rust: 'rust',
+  html: 'html',
 };
 
 interface PublicCase {
@@ -81,6 +82,8 @@ export default function ExamPage() {
   const [grade, setGrade] = useState<Grade | null>(null);
   const [tab, setTab] = useState<'run' | 'grade'>('grade');
   const [pasteHits, setPasteHits] = useState(0);
+  const [htmlSaved, setHtmlSaved] = useState(false);
+  const [previewCode, setPreviewCode] = useState('');
   const [secondsLeft, setSecondsLeft] = useState(EXAM_SECONDS);
   const startRef = useRef(0);
   const proctor = useProctor();
@@ -89,7 +92,9 @@ export default function ExamPage() {
 
   useEffect(() => {
     startRef.current = examStartMs();
-    fetch(`${API}/problems/random`)
+    const pid = new URLSearchParams(window.location.search).get('p');
+    const url = pid ? `${API}/problems/${pid}` : `${API}/problems/random`;
+    fetch(url)
       .then((r) => r.json())
       .then((p: Problem) => {
         setProblem(p);
@@ -119,6 +124,12 @@ export default function ExamPage() {
     }, 800);
     return () => clearTimeout(t);
   }, [code, problem]);
+
+  // pratinjau HTML/CSS (debounce); dipakai hanya saat bahasa = html
+  useEffect(() => {
+    const t = setTimeout(() => setPreviewCode(code), 300);
+    return () => clearTimeout(t);
+  }, [code]);
 
   // saat kicked: keluar fullscreen + reload (mengulang; timer & examStart tetap)
   useEffect(() => {
@@ -183,15 +194,24 @@ export default function ExamPage() {
   const submit = async () => {
     if (!problem) return;
     setSubmitting(true);
-    setGrade(null);
-    setTab('grade');
+    const html = problem.language === 'html';
+    if (!html) {
+      setGrade(null);
+      setTab('grade');
+    }
     try {
       const res = await fetch(`${API}/problems/${problem.id}/submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code }),
       });
-      setGrade((await res.json()) as Grade);
+      const g = (await res.json()) as Grade;
+      if (html) {
+        setHtmlSaved(true);
+        setTimeout(() => setHtmlSaved(false), 4000);
+      } else {
+        setGrade(g);
+      }
     } catch {
       // abaikan
     } finally {
@@ -202,6 +222,7 @@ export default function ExamPage() {
   const mm = String(Math.floor(secondsLeft / 60)).padStart(2, '0');
   const ss = String(secondsLeft % 60).padStart(2, '0');
   const editorLang = MONACO_LANG[problem?.language ?? 'python'] ?? 'plaintext';
+  const isHtml = (problem?.language ?? '') === 'html';
   const timeUp = secondsLeft <= 0;
   const locked = timeUp || !proctor.active || proctor.kicked;
 
@@ -243,19 +264,21 @@ export default function ExamPage() {
           <span className={`rounded px-2 py-1 font-mono ${timeUp ? 'bg-rose-950 text-rose-400' : 'bg-slate-800'}`}>
             ⏱ {mm}:{ss}
           </span>
-          <button
-            onClick={run}
-            disabled={running || locked}
-            className="rounded border border-slate-700 px-3 py-1.5 transition hover:bg-slate-800 disabled:opacity-40"
-          >
-            {running ? '…' : '▶ Run'}
-          </button>
+          {!isHtml && (
+            <button
+              onClick={run}
+              disabled={running || locked}
+              className="rounded border border-slate-700 px-3 py-1.5 transition hover:bg-slate-800 disabled:opacity-40"
+            >
+              {running ? '…' : '▶ Run'}
+            </button>
+          )}
           <button
             onClick={submit}
             disabled={submitting || locked}
             className="rounded bg-violet-600 px-4 py-1.5 font-medium text-white transition hover:bg-violet-500 disabled:opacity-40"
           >
-            {submitting ? 'menilai…' : '✓ Submit'}
+            {submitting ? 'menilai…' : isHtml ? '✓ Kumpulkan' : '✓ Submit'}
           </button>
         </div>
       </header>
@@ -276,18 +299,25 @@ export default function ExamPage() {
               <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-slate-300">
                 {problem.description}
               </p>
-              <div className="mt-5 space-y-2">
-                <p className="font-mono text-xs text-slate-500">CONTOH</p>
-                {problem.testCases.map((c) => (
-                  <div key={c.order} className="rounded border border-slate-800 bg-[#0b0e14] p-2 font-mono text-xs">
-                    <div className="text-slate-500">input</div>
-                    <pre className="whitespace-pre-wrap text-slate-300">{c.stdin || '(kosong)'}</pre>
-                    <div className="mt-1 text-slate-500">output</div>
-                    <pre className="whitespace-pre-wrap text-emerald-400">{c.expected}</pre>
-                  </div>
-                ))}
-                <p className="font-mono text-xs text-slate-600">+ {problem.hiddenCount} uji tersembunyi</p>
-              </div>
+              {isHtml ? (
+                <div className="mt-5 rounded border border-slate-800 bg-[#0b0e14] p-3 text-xs text-slate-400">
+                  Ketik HTML/CSS/JS di editor — <b className="text-slate-200">pratinjau langsung</b> muncul
+                  di kanan. Klik <b className="text-slate-200">Kumpulkan</b> untuk mengirim; penilaian oleh penguji.
+                </div>
+              ) : (
+                <div className="mt-5 space-y-2">
+                  <p className="font-mono text-xs text-slate-500">CONTOH</p>
+                  {problem.testCases.map((c) => (
+                    <div key={c.order} className="rounded border border-slate-800 bg-[#0b0e14] p-2 font-mono text-xs">
+                      <div className="text-slate-500">input</div>
+                      <pre className="whitespace-pre-wrap text-slate-300">{c.stdin || '(kosong)'}</pre>
+                      <div className="mt-1 text-slate-500">output</div>
+                      <pre className="whitespace-pre-wrap text-emerald-400">{c.expected}</pre>
+                    </div>
+                  ))}
+                  <p className="font-mono text-xs text-slate-600">+ {problem.hiddenCount} uji tersembunyi</p>
+                </div>
+              )}
             </>
           )}
         </aside>
@@ -312,6 +342,20 @@ export default function ExamPage() {
           />
         </div>
 
+        {isHtml ? (
+          <div className="flex min-h-0 flex-col">
+            <div className="flex items-center justify-between border-b border-slate-800 bg-[#0b0e14] px-4 py-2 font-mono text-xs text-slate-400">
+              <span>PRATINJAU LANGSUNG</span>
+              {htmlSaved && <span className="text-emerald-400">✓ dikumpulkan</span>}
+            </div>
+            <iframe
+              title="pratinjau"
+              srcDoc={previewCode}
+              sandbox="allow-scripts"
+              className="min-h-0 flex-1 border-0 bg-white"
+            />
+          </div>
+        ) : (
         <div className="flex min-h-0 flex-col bg-[#0b0e14]">
           <div className="flex border-b border-slate-800 font-mono text-xs">
             <button onClick={() => setTab('grade')} className={`px-4 py-2 ${tab === 'grade' ? 'bg-slate-800 text-white' : 'text-slate-500'}`}>
@@ -358,6 +402,7 @@ export default function ExamPage() {
               ))}
           </div>
         </div>
+        )}
       </div>
 
       <footer className="border-t border-slate-800 px-5 py-1.5 text-center font-mono text-[11px] text-slate-600">
