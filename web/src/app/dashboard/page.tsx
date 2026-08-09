@@ -47,7 +47,7 @@ interface UserRow {
   status: string;
 }
 
-type Tab = 'monitor' | 'subs' | 'sim' | 'users';
+type Tab = 'monitor' | 'subs' | 'sim' | 'users' | 'examiners';
 
 export default function Dashboard() {
   const router = useRouter();
@@ -62,6 +62,9 @@ export default function Dashboard() {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [pForm, setPForm] = useState({ email: '', name: '', password: '' });
   const [pMsg, setPMsg] = useState('');
+  const [examiners, setExaminers] = useState<string[]>([]);
+  const [enrollName, setEnrollName] = useState('');
+  const [enrollMsg, setEnrollMsg] = useState('');
 
   useEffect(() => {
     fetch(`${API}/auth/me`, opt)
@@ -101,6 +104,14 @@ export default function Dashboard() {
     if (me && tab === 'users') loadUsers();
   }, [me, tab, loadUsers]);
 
+  const loadExaminers = useCallback(() => {
+    fetch(`${API}/examiners`, opt).then((r) => r.json()).then(setExaminers).catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
+    if (me && tab === 'examiners') loadExaminers();
+  }, [me, tab, loadExaminers]);
+
   const loadSim = (id: string) => {
     setSimProblem(id);
     setSim(null);
@@ -127,6 +138,50 @@ export default function Dashboard() {
     }
   };
 
+  const enrollExaminer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setEnrollMsg('');
+    const form = e.currentTarget as HTMLFormElement;
+    const input = form.elements.namedItem('foto') as HTMLInputElement;
+    const file = input?.files?.[0];
+    if (!enrollName.trim() || !file) {
+      setEnrollMsg('Nama & foto wajib.');
+      return;
+    }
+    const image = await new Promise<string>((resolve) => {
+      const fr = new FileReader();
+      fr.onload = () => resolve(String(fr.result));
+      fr.readAsDataURL(file);
+    });
+    const r = await fetch(`${API}/examiners`, {
+      ...opt,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: enrollName.trim(), image }),
+    });
+    const d = await r.json().catch(() => ({}));
+    if (r.ok && d.ok) {
+      setEnrollMsg(`Wajah "${enrollName}" terdaftar.`);
+      setEnrollName('');
+      form.reset();
+      loadExaminers();
+    } else {
+      setEnrollMsg(
+        d.reason === 'service_unavailable'
+          ? 'Service GPU tidak aktif.'
+          : 'Wajah tak terdeteksi / gagal daftar.',
+      );
+    }
+  };
+
+  const removeExaminer = async (name: string) => {
+    await fetch(`${API}/examiners/${encodeURIComponent(name)}`, {
+      ...opt,
+      method: 'DELETE',
+    }).catch(() => undefined);
+    loadExaminers();
+  };
+
   const logout = async () => {
     await fetch(`${API}/auth/logout`, { ...opt, method: 'POST' }).catch(() => undefined);
     router.replace('/welcome');
@@ -143,6 +198,7 @@ export default function Dashboard() {
     ['monitor', 'Monitoring Live'],
     ['subs', 'Submission & Nilai'],
     ['sim', 'Kemiripan Kode'],
+    ['examiners', 'Wajah Penguji'],
   ];
   if (me.role === 'superadmin') tabs.push(['users', 'Kelola Penguji']);
 
@@ -312,6 +368,55 @@ export default function Dashboard() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+        )}
+
+        {tab === 'examiners' && (
+          <div className="max-w-2xl space-y-6">
+            <div className="rounded-lg border border-slate-800 bg-[#0b0e14] p-5">
+              <h2 className="mb-1 font-semibold text-white">Daftarkan wajah penguji</h2>
+              <p className="mb-4 text-xs text-slate-500">
+                Wajah penguji terdaftar TIDAK dianggap &quot;orang asing&quot; saat mengawasi ujian.
+                Butuh service GPU aktif. Disimpan sebagai embedding (bukan foto).
+              </p>
+              <form onSubmit={enrollExaminer} className="space-y-3">
+                <input
+                  value={enrollName}
+                  onChange={(e) => setEnrollName(e.target.value)}
+                  placeholder="Nama penguji"
+                  className="w-full rounded border border-slate-700 bg-[#0d1117] px-3 py-2 text-sm outline-none focus:border-violet-500"
+                />
+                <input
+                  name="foto"
+                  type="file"
+                  accept="image/*"
+                  className="block w-full text-sm text-slate-400 file:mr-3 file:rounded file:border-0 file:bg-violet-600 file:px-3 file:py-1.5 file:text-white"
+                />
+                {enrollMsg && <p className="text-sm text-amber-400">{enrollMsg}</p>}
+                <button type="submit" className="rounded bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500">
+                  Daftarkan
+                </button>
+              </form>
+            </div>
+            <div className="rounded-lg border border-slate-800">
+              <div className="border-b border-slate-800 px-4 py-2 font-mono text-xs text-slate-500">
+                TERDAFTAR ({examiners.length})
+              </div>
+              {examiners.length === 0 ? (
+                <p className="px-4 py-6 text-center text-sm text-slate-600">Belum ada wajah penguji terdaftar.</p>
+              ) : (
+                <ul className="divide-y divide-slate-800">
+                  {examiners.map((n) => (
+                    <li key={n} className="flex items-center justify-between px-4 py-2 text-sm">
+                      <span className="text-slate-200">🎓 {n}</span>
+                      <button onClick={() => removeExaminer(n)} className="rounded border border-slate-700 px-2 py-1 text-xs text-rose-400 hover:bg-slate-800">
+                        Hapus
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           </div>
         )}
