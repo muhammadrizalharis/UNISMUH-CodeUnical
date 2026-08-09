@@ -59,6 +59,40 @@ interface CourseDetail extends Course {
   problems: { id: string; title: string; language: string; difficulty: string }[];
 }
 
+interface CaseForm {
+  stdin: string;
+  expected: string;
+  points: number;
+  hidden: boolean;
+}
+interface SoalForm {
+  id: string | null;
+  courseId: string;
+  title: string;
+  language: string;
+  difficulty: string;
+  description: string;
+  starterCode: string;
+  setupSql: string;
+  testCases: CaseForm[];
+}
+
+const SOAL_LANGS = [
+  'python',
+  'javascript',
+  'typescript',
+  'java',
+  'cpp',
+  'c',
+  'csharp',
+  'go',
+  'rust',
+  'php',
+  'ruby',
+  'sql',
+  'html',
+];
+
 type Tab = 'monitor' | 'subs' | 'sim' | 'users' | 'examiners' | 'courses';
 
 export default function Dashboard() {
@@ -82,6 +116,9 @@ export default function Dashboard() {
   const [ncName, setNcName] = useState('');
   const [ncSem, setNcSem] = useState('');
   const [courseMsg, setCourseMsg] = useState('');
+  const [soal, setSoal] = useState<SoalForm | null>(null);
+  const [soalMsg, setSoalMsg] = useState('');
+  const [soalBusy, setSoalBusy] = useState(false);
 
   useEffect(() => {
     fetch(`${API}/auth/me`, opt)
@@ -210,6 +247,105 @@ export default function Dashboard() {
   const openCourseDetail = async (id: string) => {
     const r = await fetch(`${API}/courses/${id}`, opt);
     if (r.ok) setOpenCourse(await r.json());
+  };
+
+  const emptyCase = (): CaseForm => ({ stdin: '', expected: '', points: 1, hidden: true });
+
+  const newSoal = (courseId: string) => {
+    setSoalMsg('');
+    setSoal({
+      id: null,
+      courseId,
+      title: '',
+      language: 'python',
+      difficulty: 'mudah',
+      description: '',
+      starterCode: '',
+      setupSql: '',
+      testCases: [{ stdin: '', expected: '', points: 1, hidden: false }],
+    });
+  };
+
+  const editSoal = async (id: string, courseId: string) => {
+    setSoalMsg('');
+    const r = await fetch(`${API}/problems/${id}/full`, opt);
+    if (!r.ok) {
+      setSoalMsg('Gagal memuat soal.');
+      return;
+    }
+    const d = await r.json();
+    setSoal({
+      id: d.id,
+      courseId: d.courseId ?? courseId,
+      title: d.title ?? '',
+      language: d.language ?? 'python',
+      difficulty: d.difficulty ?? 'mudah',
+      description: d.description ?? '',
+      starterCode: d.starterCode ?? '',
+      setupSql: d.setupSql ?? '',
+      testCases: (d.testCases ?? []).map((t: CaseForm) => ({
+        stdin: t.stdin ?? '',
+        expected: t.expected ?? '',
+        points: Number(t.points) || 1,
+        hidden: !!t.hidden,
+      })),
+    });
+  };
+
+  const saveSoal = async () => {
+    if (!soal) return;
+    if (!soal.title.trim()) {
+      setSoalMsg('Judul wajib.');
+      return;
+    }
+    if (!soal.testCases.length) {
+      setSoalMsg('Minimal 1 test case.');
+      return;
+    }
+    setSoalBusy(true);
+    setSoalMsg('');
+    const payload = {
+      title: soal.title.trim(),
+      language: soal.language,
+      difficulty: soal.difficulty,
+      description: soal.description,
+      starterCode: soal.starterCode,
+      setupSql: soal.language === 'sql' ? soal.setupSql : '',
+      courseId: soal.courseId,
+      testCases: soal.testCases.map((t, i) => ({
+        stdin: t.stdin,
+        expected: t.expected,
+        points: Number(t.points) || 1,
+        hidden: t.hidden,
+        order: i + 1,
+      })),
+    };
+    const url = soal.id ? `${API}/problems/${soal.id}` : `${API}/problems`;
+    const method = soal.id ? 'PUT' : 'POST';
+    const r = await fetch(url, {
+      ...opt,
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    setSoalBusy(false);
+    if (r.ok) {
+      setSoal(null);
+      loadCourses();
+      openCourseDetail(soal.courseId);
+      fetch(`${API}/problems`, opt).then((res) => res.json()).then(setProblems).catch(() => undefined);
+    } else {
+      const d = await r.json().catch(() => ({}));
+      setSoalMsg(d.message || 'Gagal menyimpan soal.');
+    }
+  };
+
+  const deleteSoal = async (id: string, courseId: string) => {
+    if (!confirm('Hapus soal ini?')) return;
+    await fetch(`${API}/problems/${id}`, { ...opt, method: 'DELETE' }).catch(() => undefined);
+    loadCourses();
+    openCourseDetail(courseId);
+    fetch(`${API}/problems`, opt).then((res) => res.json()).then(setProblems).catch(() => undefined);
   };
 
   const createCourse = async (e: React.FormEvent) => {
@@ -491,15 +627,33 @@ export default function Dashboard() {
                     </button>
                   </div>
                   <p className="mb-3 font-mono text-[11px] text-slate-500">{openCourse.problems.length} soal</p>
+                  <button
+                    onClick={() => newSoal(openCourse.id)}
+                    className="mb-3 w-full rounded bg-violet-600 px-3 py-2 text-xs font-medium text-white hover:bg-violet-500"
+                  >
+                    + Buat Soal
+                  </button>
                   <ul className="space-y-1">
                     {openCourse.problems.map((p) => (
-                      <li key={p.id} className="flex items-center justify-between rounded border border-slate-800 px-2 py-1 text-xs">
-                        <span className="text-slate-300">{p.title}</span>
-                        <span className="font-mono text-slate-500">{p.language}</span>
+                      <li key={p.id} className="flex items-center justify-between gap-2 rounded border border-slate-800 px-2 py-1 text-xs">
+                        <span className="min-w-0 flex-1 truncate text-slate-300">{p.title}</span>
+                        <span className="shrink-0 font-mono text-slate-500">{p.language}</span>
+                        <button
+                          onClick={() => editSoal(p.id, openCourse.id)}
+                          className="shrink-0 rounded bg-slate-800 px-1.5 py-0.5 text-[10px] text-slate-300 hover:bg-slate-700"
+                        >
+                          edit
+                        </button>
+                        <button
+                          onClick={() => deleteSoal(p.id, openCourse.id)}
+                          className="shrink-0 rounded bg-rose-950 px-1.5 py-0.5 text-[10px] text-rose-300 hover:bg-rose-900"
+                        >
+                          hapus
+                        </button>
                       </li>
                     ))}
                     {openCourse.problems.length === 0 && (
-                      <li className="text-xs text-slate-600">Belum ada soal (authoring soal menyusul).</li>
+                      <li className="text-xs text-slate-600">Belum ada soal. Klik &ldquo;+ Buat Soal&rdquo;.</li>
                     )}
                   </ul>
                 </div>
@@ -557,6 +711,183 @@ export default function Dashboard() {
           </div>
         )}
       </main>
+
+      {soal && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 p-4">
+          <div className="my-4 w-full max-w-3xl rounded-xl border border-slate-700 bg-[#0b0e14] p-5 shadow-2xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-white">
+                {soal.id ? 'Edit Soal' : 'Buat Soal'}
+              </h3>
+              <button onClick={() => setSoal(null)} className="text-sm text-slate-500 hover:text-slate-300">
+                tutup
+              </button>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="sm:col-span-2 text-xs text-slate-400">
+                Judul
+                <input
+                  value={soal.title}
+                  onChange={(e) => setSoal({ ...soal, title: e.target.value })}
+                  className="mt-1 w-full rounded border border-slate-700 bg-[#0d1117] px-3 py-2 text-sm text-slate-100 outline-none focus:border-violet-500"
+                />
+              </label>
+              <label className="text-xs text-slate-400">
+                Bahasa
+                <select
+                  value={soal.language}
+                  onChange={(e) => setSoal({ ...soal, language: e.target.value })}
+                  className="mt-1 w-full rounded border border-slate-700 bg-[#0d1117] px-3 py-2 text-sm text-slate-100 outline-none focus:border-violet-500"
+                >
+                  {SOAL_LANGS.map((l) => (
+                    <option key={l} value={l}>{l}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="text-xs text-slate-400">
+                Kesulitan
+                <select
+                  value={soal.difficulty}
+                  onChange={(e) => setSoal({ ...soal, difficulty: e.target.value })}
+                  className="mt-1 w-full rounded border border-slate-700 bg-[#0d1117] px-3 py-2 text-sm text-slate-100 outline-none focus:border-violet-500"
+                >
+                  <option value="mudah">mudah</option>
+                  <option value="sedang">sedang</option>
+                  <option value="sulit">sulit</option>
+                </select>
+              </label>
+              <label className="sm:col-span-2 text-xs text-slate-400">
+                Deskripsi / Soal
+                <textarea
+                  value={soal.description}
+                  onChange={(e) => setSoal({ ...soal, description: e.target.value })}
+                  rows={4}
+                  className="mt-1 w-full rounded border border-slate-700 bg-[#0d1117] px-3 py-2 font-mono text-xs text-slate-100 outline-none focus:border-violet-500"
+                />
+              </label>
+              <label className="sm:col-span-2 text-xs text-slate-400">
+                Kode awal (starter)
+                <textarea
+                  value={soal.starterCode}
+                  onChange={(e) => setSoal({ ...soal, starterCode: e.target.value })}
+                  rows={4}
+                  className="mt-1 w-full rounded border border-slate-700 bg-[#0d1117] px-3 py-2 font-mono text-xs text-slate-100 outline-none focus:border-violet-500"
+                />
+              </label>
+              {soal.language === 'sql' && (
+                <label className="sm:col-span-2 text-xs text-slate-400">
+                  Setup SQL (skema + data awal)
+                  <textarea
+                    value={soal.setupSql}
+                    onChange={(e) => setSoal({ ...soal, setupSql: e.target.value })}
+                    rows={4}
+                    className="mt-1 w-full rounded border border-slate-700 bg-[#0d1117] px-3 py-2 font-mono text-xs text-slate-100 outline-none focus:border-violet-500"
+                  />
+                </label>
+              )}
+            </div>
+
+            <div className="mt-4">
+              <div className="mb-2 flex items-center justify-between">
+                <h4 className="text-sm font-medium text-white">Test Case ({soal.testCases.length})</h4>
+                <button
+                  onClick={() => setSoal({ ...soal, testCases: [...soal.testCases, emptyCase()] })}
+                  className="rounded bg-slate-800 px-2 py-1 text-xs text-slate-200 hover:bg-slate-700"
+                >
+                  + Tambah case
+                </button>
+              </div>
+              <div className="space-y-2">
+                {soal.testCases.map((tc, i) => (
+                  <div key={i} className="rounded border border-slate-800 bg-[#0d1117] p-2">
+                    <div className="mb-2 flex items-center justify-between">
+                      <span className="font-mono text-[10px] text-slate-500">case #{i + 1}</span>
+                      <button
+                        onClick={() =>
+                          setSoal({ ...soal, testCases: soal.testCases.filter((_, k) => k !== i) })
+                        }
+                        className="rounded bg-rose-950 px-1.5 py-0.5 text-[10px] text-rose-300 hover:bg-rose-900"
+                      >
+                        hapus
+                      </button>
+                    </div>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <textarea
+                        value={tc.stdin}
+                        onChange={(e) => {
+                          const next = [...soal.testCases];
+                          next[i] = { ...tc, stdin: e.target.value };
+                          setSoal({ ...soal, testCases: next });
+                        }}
+                        rows={2}
+                        placeholder="stdin (input)"
+                        className="w-full rounded border border-slate-700 bg-[#0b0e14] px-2 py-1 font-mono text-xs text-slate-100 outline-none focus:border-violet-500"
+                      />
+                      <textarea
+                        value={tc.expected}
+                        onChange={(e) => {
+                          const next = [...soal.testCases];
+                          next[i] = { ...tc, expected: e.target.value };
+                          setSoal({ ...soal, testCases: next });
+                        }}
+                        rows={2}
+                        placeholder="expected (output)"
+                        className="w-full rounded border border-slate-700 bg-[#0b0e14] px-2 py-1 font-mono text-xs text-slate-100 outline-none focus:border-violet-500"
+                      />
+                    </div>
+                    <div className="mt-2 flex items-center gap-4">
+                      <label className="flex items-center gap-1 text-xs text-slate-400">
+                        poin
+                        <input
+                          type="number"
+                          min={1}
+                          value={tc.points}
+                          onChange={(e) => {
+                            const next = [...soal.testCases];
+                            next[i] = { ...tc, points: Number(e.target.value) || 1 };
+                            setSoal({ ...soal, testCases: next });
+                          }}
+                          className="w-16 rounded border border-slate-700 bg-[#0b0e14] px-2 py-1 text-xs text-slate-100 outline-none focus:border-violet-500"
+                        />
+                      </label>
+                      <label className="flex items-center gap-1 text-xs text-slate-400">
+                        <input
+                          type="checkbox"
+                          checked={tc.hidden}
+                          onChange={(e) => {
+                            const next = [...soal.testCases];
+                            next[i] = { ...tc, hidden: e.target.checked };
+                            setSoal({ ...soal, testCases: next });
+                          }}
+                        />
+                        hidden (tak terlihat peserta)
+                      </label>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {soalMsg && <p className="mt-3 text-sm text-amber-400">{soalMsg}</p>}
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                onClick={() => setSoal(null)}
+                className="rounded border border-slate-700 px-4 py-2 text-sm text-slate-300 hover:bg-slate-800"
+              >
+                Batal
+              </button>
+              <button
+                onClick={saveSoal}
+                disabled={soalBusy}
+                className="rounded bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500 disabled:opacity-50"
+              >
+                {soalBusy ? 'Menyimpan…' : 'Simpan'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {replayId && <ReplayModal attemptId={replayId} onClose={() => setReplayId(null)} />}
     </div>

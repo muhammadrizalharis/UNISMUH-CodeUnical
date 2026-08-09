@@ -40,6 +40,13 @@ export class ProblemsController {
     return this.problems.similarity(id);
   }
 
+  @Get(':id/full')
+  @UseGuards(RolesGuard)
+  @Roles('penguji', 'superadmin')
+  authoringDetail(@Param('id') id: string) {
+    return this.problems.authoringDetail(id);
+  }
+
   @Post()
   @UseGuards(RolesGuard)
   @Roles('penguji', 'superadmin')

@@ -141,6 +141,17 @@ export class ProblemsService {
     return { total: subs.length, pairs: pairs.slice(0, 100) };
   }
 
+  async authoringDetail(id: string) {
+    const p = await this.prisma.problem.findUnique({
+      where: { id },
+      include: {
+        testCases: { orderBy: { order: 'asc' } },
+      },
+    });
+    if (!p) throw new NotFoundException('Soal tidak ditemukan.');
+    return p;
+  }
+
   async create(input: ProblemInput) {
     return this.prisma.problem.create({
       data: {
