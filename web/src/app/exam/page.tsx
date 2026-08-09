@@ -12,8 +12,11 @@ const EXAM_SECONDS = 30 * 60;
 const MONACO_LANG: Record<string, string> = {
   python: 'python',
   javascript: 'javascript',
+  typescript: 'typescript',
   cpp: 'cpp',
   c: 'c',
+  go: 'go',
+  java: 'java',
 };
 
 interface PublicCase {
