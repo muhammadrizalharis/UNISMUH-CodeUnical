@@ -86,6 +86,27 @@ interface Material {
   createdAt: string;
 }
 
+interface ExamLite {
+  id: string;
+  title: string;
+  durationMin: number;
+  startAt: string;
+  endAt: string;
+  published: boolean;
+  _count: { problems: number };
+}
+interface ExamForm {
+  id: string | null;
+  courseId: string;
+  title: string;
+  description: string;
+  durationMin: number;
+  startAt: string; // datetime-local
+  endAt: string; // datetime-local
+  published: boolean;
+  problemIds: string[];
+}
+
 const SOAL_LANGS = [
   'python',
   'javascript',
@@ -131,6 +152,10 @@ export default function Dashboard() {
   const [materials, setMaterials] = useState<Material[]>([]);
   const [matMsg, setMatMsg] = useState('');
   const [matBusy, setMatBusy] = useState(false);
+  const [exams, setExams] = useState<ExamLite[]>([]);
+  const [exam, setExam] = useState<ExamForm | null>(null);
+  const [examMsg, setExamMsg] = useState('');
+  const [examBusy, setExamBusy] = useState(false);
 
   useEffect(() => {
     fetch(`${API}/auth/me`, opt)
@@ -260,6 +285,116 @@ export default function Dashboard() {
     const r = await fetch(`${API}/courses/${id}`, opt);
     if (r.ok) setOpenCourse(await r.json());
     loadMaterials(id);
+    loadExams(id);
+  };
+
+  const loadExams = async (courseId: string) => {
+    const r = await fetch(`${API}/exams?courseId=${courseId}`, opt);
+    if (r.ok) setExams(await r.json());
+    else setExams([]);
+  };
+
+  const toLocalInput = (iso: string) => {
+    const d = new Date(iso);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
+  const newExam = (courseId: string) => {
+    setExamMsg('');
+    setExam({
+      id: null,
+      courseId,
+      title: '',
+      description: '',
+      durationMin: 90,
+      startAt: '',
+      endAt: '',
+      published: false,
+      problemIds: [],
+    });
+  };
+
+  const editExam = async (id: string, courseId: string) => {
+    setExamMsg('');
+    const r = await fetch(`${API}/exams/${id}`, opt);
+    if (!r.ok) {
+      setExamMsg('Gagal memuat ujian.');
+      return;
+    }
+    const d = await r.json();
+    setExam({
+      id: d.id,
+      courseId: d.courseId ?? courseId,
+      title: d.title ?? '',
+      description: d.description ?? '',
+      durationMin: d.durationMin ?? 90,
+      startAt: d.startAt ? toLocalInput(d.startAt) : '',
+      endAt: d.endAt ? toLocalInput(d.endAt) : '',
+      published: !!d.published,
+      problemIds: (d.problems ?? []).map((p: { problemId: string }) => p.problemId),
+    });
+  };
+
+  const toggleExamProblem = (pid: string) => {
+    if (!exam) return;
+    const has = exam.problemIds.includes(pid);
+    setExam({
+      ...exam,
+      problemIds: has
+        ? exam.problemIds.filter((x) => x !== pid)
+        : [...exam.problemIds, pid],
+    });
+  };
+
+  const saveExam = async () => {
+    if (!exam) return;
+    if (!exam.title.trim()) {
+      setExamMsg('Judul wajib.');
+      return;
+    }
+    if (!exam.startAt || !exam.endAt) {
+      setExamMsg('Jadwal mulai & selesai wajib.');
+      return;
+    }
+    if (Number(exam.durationMin) <= 0) {
+      setExamMsg('Durasi harus > 0.');
+      return;
+    }
+    setExamBusy(true);
+    setExamMsg('');
+    const payload = {
+      courseId: exam.courseId,
+      title: exam.title.trim(),
+      description: exam.description,
+      durationMin: Number(exam.durationMin),
+      startAt: new Date(exam.startAt).toISOString(),
+      endAt: new Date(exam.endAt).toISOString(),
+      published: exam.published,
+      problemIds: exam.problemIds,
+    };
+    const url = exam.id ? `${API}/exams/${exam.id}` : `${API}/exams`;
+    const method = exam.id ? 'PUT' : 'POST';
+    const r = await fetch(url, {
+      ...opt,
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    setExamBusy(false);
+    if (r.ok) {
+      setExam(null);
+      loadExams(exam.courseId);
+    } else {
+      const d = await r.json().catch(() => ({}));
+      setExamMsg(d.message || 'Gagal menyimpan ujian.');
+    }
+  };
+
+  const deleteExam = async (id: string, courseId: string) => {
+    if (!confirm('Hapus paket ujian ini?')) return;
+    await fetch(`${API}/exams/${id}`, { ...opt, method: 'DELETE' }).catch(() => undefined);
+    loadExams(courseId);
   };
 
   const loadMaterials = async (courseId: string) => {
@@ -782,6 +917,51 @@ export default function Dashboard() {
                       )}
                     </ul>
                   </div>
+
+                  <div className="mt-4 border-t border-slate-800 pt-3">
+                    <div className="mb-2 flex items-center justify-between">
+                      <h4 className="text-sm font-medium text-white">Ujian ({exams.length})</h4>
+                      <button
+                        onClick={() => newExam(openCourse.id)}
+                        className="rounded bg-violet-600 px-2 py-1 text-[11px] font-medium text-white hover:bg-violet-500"
+                      >
+                        + Buat Ujian
+                      </button>
+                    </div>
+                    <ul className="space-y-1">
+                      {exams.map((ex) => (
+                        <li key={ex.id} className="rounded border border-slate-800 px-2 py-1.5 text-xs">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="min-w-0 flex-1 truncate text-slate-200">{ex.title}</span>
+                            {ex.published ? (
+                              <span className="shrink-0 rounded bg-emerald-950 px-1.5 py-0.5 text-[10px] text-emerald-300">tayang</span>
+                            ) : (
+                              <span className="shrink-0 rounded bg-slate-800 px-1.5 py-0.5 text-[10px] text-slate-400">draf</span>
+                            )}
+                            <button
+                              onClick={() => editExam(ex.id, openCourse.id)}
+                              className="shrink-0 rounded bg-slate-800 px-1.5 py-0.5 text-[10px] text-slate-300 hover:bg-slate-700"
+                            >
+                              edit
+                            </button>
+                            <button
+                              onClick={() => deleteExam(ex.id, openCourse.id)}
+                              className="shrink-0 rounded bg-rose-950 px-1.5 py-0.5 text-[10px] text-rose-300 hover:bg-rose-900"
+                            >
+                              hapus
+                            </button>
+                          </div>
+                          <div className="mt-1 font-mono text-[10px] text-slate-500">
+                            {ex._count.problems} soal · {ex.durationMin} mnt ·{' '}
+                            {new Date(ex.startAt).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' })}
+                          </div>
+                        </li>
+                      ))}
+                      {exams.length === 0 && (
+                        <li className="text-xs text-slate-600">Belum ada ujian.</li>
+                      )}
+                    </ul>
+                  </div>
                 </div>
               )}
             </aside>
@@ -1009,6 +1189,122 @@ export default function Dashboard() {
                 className="rounded bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500 disabled:opacity-50"
               >
                 {soalBusy ? 'Menyimpan…' : 'Simpan'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {exam && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 p-4">
+          <div className="my-4 w-full max-w-2xl rounded-xl border border-slate-700 bg-[#0b0e14] p-5 shadow-2xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-white">
+                {exam.id ? 'Edit Ujian' : 'Buat Ujian'}
+              </h3>
+              <button onClick={() => setExam(null)} className="text-sm text-slate-500 hover:text-slate-300">
+                tutup
+              </button>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="sm:col-span-2 text-xs text-slate-400">
+                Judul ujian
+                <input
+                  value={exam.title}
+                  onChange={(e) => setExam({ ...exam, title: e.target.value })}
+                  className="mt-1 w-full rounded border border-slate-700 bg-[#0d1117] px-3 py-2 text-sm text-slate-100 outline-none focus:border-violet-500"
+                />
+              </label>
+              <label className="sm:col-span-2 text-xs text-slate-400">
+                Deskripsi (opsional)
+                <textarea
+                  value={exam.description}
+                  onChange={(e) => setExam({ ...exam, description: e.target.value })}
+                  rows={2}
+                  className="mt-1 w-full rounded border border-slate-700 bg-[#0d1117] px-3 py-2 text-xs text-slate-100 outline-none focus:border-violet-500"
+                />
+              </label>
+              <label className="text-xs text-slate-400">
+                Durasi (menit)
+                <input
+                  type="number"
+                  min={1}
+                  value={exam.durationMin}
+                  onChange={(e) => setExam({ ...exam, durationMin: Number(e.target.value) })}
+                  className="mt-1 w-full rounded border border-slate-700 bg-[#0d1117] px-3 py-2 text-sm text-slate-100 outline-none focus:border-violet-500"
+                />
+              </label>
+              <label className="flex items-end gap-2 text-xs text-slate-400">
+                <input
+                  type="checkbox"
+                  checked={exam.published}
+                  onChange={(e) => setExam({ ...exam, published: e.target.checked })}
+                  className="mb-2"
+                />
+                <span className="mb-1.5">Tayangkan (published)</span>
+              </label>
+              <label className="text-xs text-slate-400">
+                Jadwal mulai
+                <input
+                  type="datetime-local"
+                  value={exam.startAt}
+                  onChange={(e) => setExam({ ...exam, startAt: e.target.value })}
+                  className="mt-1 w-full rounded border border-slate-700 bg-[#0d1117] px-3 py-2 text-sm text-slate-100 outline-none focus:border-violet-500"
+                />
+              </label>
+              <label className="text-xs text-slate-400">
+                Jadwal selesai
+                <input
+                  type="datetime-local"
+                  value={exam.endAt}
+                  onChange={(e) => setExam({ ...exam, endAt: e.target.value })}
+                  className="mt-1 w-full rounded border border-slate-700 bg-[#0d1117] px-3 py-2 text-sm text-slate-100 outline-none focus:border-violet-500"
+                />
+              </label>
+            </div>
+
+            <div className="mt-4">
+              <h4 className="mb-2 text-sm font-medium text-white">
+                Pilih soal ({exam.problemIds.length} dipilih)
+              </h4>
+              <div className="max-h-52 space-y-1 overflow-y-auto rounded border border-slate-800 p-2">
+                {(openCourse?.problems ?? []).map((p) => (
+                  <label
+                    key={p.id}
+                    className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-xs hover:bg-slate-800/50"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={exam.problemIds.includes(p.id)}
+                      onChange={() => toggleExamProblem(p.id)}
+                    />
+                    <span className="min-w-0 flex-1 truncate text-slate-200">{p.title}</span>
+                    <span className="shrink-0 font-mono text-[10px] text-slate-500">{p.language}</span>
+                  </label>
+                ))}
+                {(openCourse?.problems ?? []).length === 0 && (
+                  <p className="px-2 py-1 text-xs text-slate-600">
+                    Belum ada soal di MK ini. Buat soal dulu.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {examMsg && <p className="mt-3 text-sm text-amber-400">{examMsg}</p>}
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                onClick={() => setExam(null)}
+                className="rounded border border-slate-700 px-4 py-2 text-sm text-slate-300 hover:bg-slate-800"
+              >
+                Batal
+              </button>
+              <button
+                onClick={saveExam}
+                disabled={examBusy}
+                className="rounded bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500 disabled:opacity-50"
+              >
+                {examBusy ? 'Menyimpan…' : 'Simpan'}
               </button>
             </div>
           </div>
