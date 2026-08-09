@@ -1,5 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
+import { StorageService } from '../storage/storage.service';
 
 const VIOLATION_KINDS = new Set([
   'tabhidden',
@@ -21,7 +23,10 @@ interface KeyIn {
 
 @Injectable()
 export class ProctorService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly storage: StorageService,
+  ) {}
 
   async createAttempt(problemId?: string) {
     const a = await this.prisma.examAttempt.create({
@@ -98,8 +103,15 @@ export class ProctorService {
     if (!m) return { ok: false };
     const buf = Buffer.from(m[2], 'base64');
     if (buf.length > 2_000_000) return { ok: false };
+    const mime = m[1];
+    const ext = mime.split('/')[1]?.replace('jpeg', 'jpg') ?? 'bin';
+    const key = `${attemptId}/${randomUUID()}.${ext}`;
+    // Utamakan MinIO; bila tak siap/gagal -> simpan bytes di DB (fallback).
+    const stored = await this.storage.put(key, buf, mime).catch(() => false);
     await this.prisma.proctorSnapshot.create({
-      data: { attemptId, kind: kind.slice(0, 40), mime: m[1], image: buf },
+      data: stored
+        ? { attemptId, kind: kind.slice(0, 40), mime, objectKey: key }
+        : { attemptId, kind: kind.slice(0, 40), mime, image: buf },
     });
     await this.prisma.examAttempt
       .update({ where: { id: attemptId }, data: { lastSeenAt: new Date() } })
@@ -118,6 +130,10 @@ export class ProctorService {
   async getSnapshot(id: string) {
     const s = await this.prisma.proctorSnapshot.findUnique({ where: { id } });
     if (!s) return null;
-    return { mime: s.mime, image: s.image };
+    if (s.objectKey) {
+      const buf = await this.storage.get(s.objectKey).catch(() => null);
+      return buf ? { mime: s.mime, image: buf } : null;
+    }
+    return { mime: s.mime, image: s.image ?? Buffer.alloc(0) };
   }
 }

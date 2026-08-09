@@ -19,5 +19,20 @@ services:
       timeout: 5s
       retries: 5
 
+  minio:
+    image: minio/minio:latest
+    container_name: codeunical-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-codeunical}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?wajib diisi di .env}
+    ports:
+      - "127.0.0.1:47900:9000"
+      - "127.0.0.1:47901:9001"
+    volumes:
+      - codeunical-miniodata:/data
+
 volumes:
   codeunical-pgdata:
+  codeunical-miniodata:

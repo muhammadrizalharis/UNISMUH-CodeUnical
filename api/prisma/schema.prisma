@@ -87,7 +87,8 @@ model ProctorSnapshot {
   attempt   ExamAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
   kind      String
   mime      String      @default("image/jpeg")
-  image     Bytes
+  image     Bytes?      // dipakai bila MinIO nonaktif (fallback DB)
+  objectKey String?     // kunci objek MinIO bila aktif
   at        DateTime    @default(now())
 
   @@index([attemptId])
