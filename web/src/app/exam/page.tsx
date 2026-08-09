@@ -21,6 +21,7 @@ const MONACO_LANG: Record<string, string> = {
   ruby: 'ruby',
   rust: 'rust',
   html: 'html',
+  sql: 'sql',
 };
 
 interface PublicCase {
@@ -35,6 +36,7 @@ interface Problem {
   description: string;
   language: string;
   starterCode: string;
+  setupSql?: string | null;
   difficulty: string;
   hiddenCount: number;
   testCases: PublicCase[];
@@ -178,10 +180,14 @@ export default function ExamPage() {
     setOutput(null);
     setTab('run');
     try {
+      const runCode =
+        problem?.language === 'sql' && problem?.setupSql
+          ? `${problem.setupSql}\n${code}`
+          : code;
       const res = await fetch(`${API}/execute`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ language: problem?.language ?? 'python', code }),
+        body: JSON.stringify({ language: problem?.language ?? 'python', code: runCode }),
       });
       setOutput((await res.json()) as RunResult);
     } catch (e) {
@@ -299,6 +305,14 @@ export default function ExamPage() {
               <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-slate-300">
                 {problem.description}
               </p>
+              {problem.setupSql && (
+                <div className="mt-4">
+                  <p className="font-mono text-xs text-slate-500">SKEMA &amp; DATA</p>
+                  <pre className="mt-1 overflow-auto rounded border border-slate-800 bg-[#0b0e14] p-2 font-mono text-[11px] leading-relaxed text-sky-300">
+                    {problem.setupSql}
+                  </pre>
+                </div>
+              )}
               {isHtml ? (
                 <div className="mt-5 rounded border border-slate-800 bg-[#0b0e14] p-3 text-xs text-slate-400">
                   Ketik HTML/CSS/JS di editor — <b className="text-slate-200">pratinjau langsung</b> muncul
