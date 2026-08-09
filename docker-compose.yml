@@ -33,6 +33,27 @@ services:
     volumes:
       - codeunical-miniodata:/data
 
+  proctor-ai:
+    build: ./proctor-ai
+    image: codeunical-proctor-ai:latest
+    container_name: codeunical-proctor-ai
+    restart: unless-stopped
+    environment:
+      DEVICE: cuda:0
+      MODELS_DIR: /models
+      FACE_MATCH_THRESHOLD: ${FACE_MATCH_THRESHOLD:-0.35}
+      PHONE_CONF: ${PHONE_CONF:-0.35}
+    ports:
+      - "127.0.0.1:47610:47610"
+    # Reserve 1 GPU (default GPU index 1); model resident di VRAM (standby ~3-4 GB).
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["${PROCTOR_GPU:-1}"]
+              capabilities: [gpu]
+
 volumes:
   codeunical-pgdata:
   codeunical-miniodata:
