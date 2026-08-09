@@ -142,6 +142,33 @@ const LANGS: Record<string, LangSpec> = {
     tmpfs: 'size=256m',
     memory: '768m',
   },
+  php: {
+    label: 'PHP 8.3',
+    image: process.env.SANDBOX_PHP_IMAGE ?? 'php:8.3-cli',
+    file: 'main.php',
+    runCmd: ['php', '/work/main.php'],
+    env: [],
+    tmpfs: 'size=64m',
+  },
+  ruby: {
+    label: 'Ruby 3.3',
+    image: process.env.SANDBOX_RUBY_IMAGE ?? 'ruby:3.3-slim',
+    file: 'main.rb',
+    runCmd: ['ruby', '/work/main.rb'],
+    env: [],
+    tmpfs: 'size=64m',
+  },
+  rust: {
+    label: 'Rust 1 (edition 2021)',
+    image: process.env.SANDBOX_RUST_IMAGE ?? 'rust:1-slim',
+    file: 'main.rs',
+    compile: {
+      cmd: ['rustc', '-O', '-o', '/out/a.out', '/work/main.rs'],
+    },
+    runCmd: ['/run/a.out'],
+    env: [],
+    tmpfs: 'size=64m',
+  },
 };
 
 export const SUPPORTED_LANGUAGES = Object.keys(LANGS);

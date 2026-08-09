@@ -115,6 +115,34 @@ const PROBLEMS: ProblemSpec[] = [
       'import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        long a = sc.nextLong(), b = sc.nextLong();\n        // cetak jumlahnya di sini\n    }\n}\n',
     testCases: SUM_CASES,
   },
+  {
+    title: 'Jumlah Dua Angka (PHP)',
+    description:
+      'Baca dua bilangan bulat dari input (dipisah spasi), lalu cetak jumlahnya. PHP 8.3 CLI.',
+    language: 'php',
+    difficulty: 'mudah',
+    starterCode: '<?php\nfscanf(STDIN, "%d %d", $a, $b);\n// cetak jumlahnya di sini\n',
+    testCases: SUM_CASES,
+  },
+  {
+    title: 'Jumlah Dua Angka (Ruby)',
+    description:
+      'Baca dua bilangan bulat dari input (dipisah spasi), lalu cetak jumlahnya. Ruby 3.3.',
+    language: 'ruby',
+    difficulty: 'mudah',
+    starterCode: 'a, b = gets.split.map(&:to_i)\n# cetak jumlahnya di sini\n',
+    testCases: SUM_CASES,
+  },
+  {
+    title: 'Jumlah Dua Angka (Rust)',
+    description:
+      'Baca dua bilangan bulat dari input (dipisah spasi), lalu cetak jumlahnya. Rust.',
+    language: 'rust',
+    difficulty: 'mudah',
+    starterCode:
+      'use std::io::*;\n\nfn main() {\n    let mut s = String::new();\n    stdin().read_line(&mut s).unwrap();\n    let v: Vec<i64> = s.trim().split_whitespace().map(|x| x.parse().unwrap()).collect();\n    // cetak jumlahnya di sini\n}\n',
+    testCases: SUM_CASES,
+  },
 ];
 
 async function main() {
