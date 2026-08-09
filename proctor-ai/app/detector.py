@@ -23,6 +23,9 @@ PHONE_CONF = float(os.environ.get("PHONE_CONF", "0.35"))
 FACE_DET_PROB = float(os.environ.get("FACE_DET_PROB", "0.90"))
 FACE_MATCH_THRESHOLD = float(os.environ.get("FACE_MATCH_THRESHOLD", "0.55"))
 COCO_CELL_PHONE = 67
+WHITELIST_PATH = os.environ.get(
+    "WHITELIST_PATH", os.path.join(MODELS_DIR, "whitelist.npz")
+)
 
 
 class Detector:
@@ -32,13 +35,36 @@ class Detector:
         self.yolo.to(self.device)
         self.mtcnn = MTCNN(keep_all=True, device=self.device)
         self.resnet = InceptionResnetV1(pretrained="vggface2").eval().to(self.device)
-        # Whitelist embedding penguji: {nama: vektor ternormalisasi}. In-memory (MVP).
+        # Whitelist embedding penguji: {nama: vektor ternormalisasi}. Persist ke disk.
         self.whitelist: dict[str, np.ndarray] = {}
+        self._load_whitelist()
         self._warmup()
 
     def _warmup(self) -> None:
         dummy = np.zeros((640, 640, 3), dtype=np.uint8)
         self.yolo.predict(dummy, verbose=False, device=self.device, conf=PHONE_CONF)
+
+    def _load_whitelist(self) -> None:
+        if os.path.exists(WHITELIST_PATH):
+            try:
+                data = np.load(WHITELIST_PATH)
+                self.whitelist = {k: data[k] for k in data.files}
+            except Exception:
+                self.whitelist = {}
+
+    def _save_whitelist(self) -> None:
+        try:
+            os.makedirs(os.path.dirname(WHITELIST_PATH) or ".", exist_ok=True)
+            np.savez(WHITELIST_PATH, **self.whitelist)
+        except Exception:
+            pass
+
+    def remove(self, name: str) -> bool:
+        if name in self.whitelist:
+            del self.whitelist[name]
+            self._save_whitelist()
+            return True
+        return False
 
     def _embed(self, img_rgb: np.ndarray, boxes, probs):
         """Ekstrak wajah -> embedding ternormalisasi (batch, di GPU)."""
@@ -118,4 +144,5 @@ class Detector:
         if len(embs) == 0:
             return False
         self.whitelist[name] = embs[0]
+        self._save_whitelist()
         return True

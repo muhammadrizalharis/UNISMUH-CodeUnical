@@ -185,4 +185,53 @@ export class ProctorService {
       .catch(() => undefined);
     return { ok: true, detected: det, violations };
   }
+
+  /** Daftar nama penguji ter-whitelist (dari service GPU). */
+  async listExaminers(): Promise<string[]> {
+    try {
+      const res = await fetch(`${VISION_URL}/health`, {
+        signal: AbortSignal.timeout(5000),
+      });
+      if (!res.ok) return [];
+      const d = (await res.json()) as { whitelist?: string[] };
+      return d.whitelist ?? [];
+    } catch {
+      return [];
+    }
+  }
+
+  /** Daftarkan wajah penguji ke whitelist service GPU. */
+  async enrollExaminer(name: string, dataUrl: string) {
+    const m = /^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/.exec(dataUrl);
+    if (!m) return { ok: false, reason: 'bad_image' };
+    const buf = Buffer.from(m[2], 'base64');
+    if (buf.length > 3_000_000) return { ok: false, reason: 'too_large' };
+    try {
+      const fd = new FormData();
+      fd.append('name', name.slice(0, 60));
+      fd.append('file', new Blob([buf], { type: m[1] }), 'face.jpg');
+      const res = await fetch(`${VISION_URL}/enroll`, {
+        method: 'POST',
+        body: fd,
+        signal: AbortSignal.timeout(15000),
+      });
+      if (!res.ok) return { ok: false, reason: 'service_error' };
+      return (await res.json()) as { ok: boolean };
+    } catch {
+      return { ok: false, reason: 'service_unavailable' };
+    }
+  }
+
+  async removeExaminer(name: string) {
+    try {
+      const res = await fetch(`${VISION_URL}/enroll/${encodeURIComponent(name)}`, {
+        method: 'DELETE',
+        signal: AbortSignal.timeout(5000),
+      });
+      if (!res.ok) return { ok: false };
+      return (await res.json()) as { ok: boolean };
+    } catch {
+      return { ok: false };
+    }
+  }
 }

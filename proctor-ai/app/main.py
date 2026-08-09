@@ -54,3 +54,8 @@ async def detect(file: UploadFile = File(...)):
 @app.post("/enroll")
 async def enroll(name: str = Form(...), file: UploadFile = File(...)):
     return {"ok": _detector().enroll(name, _read(file))}
+
+
+@app.delete("/enroll/{name}")
+async def unenroll(name: str):
+    return {"ok": _detector().remove(name)}
