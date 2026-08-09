@@ -156,6 +156,14 @@ export default function Dashboard() {
   const [exam, setExam] = useState<ExamForm | null>(null);
   const [examMsg, setExamMsg] = useState('');
   const [examBusy, setExamBusy] = useState(false);
+  const [showGen, setShowGen] = useState(false);
+  const [genMaterialIds, setGenMaterialIds] = useState<string[]>([]);
+  const [genCount, setGenCount] = useState(2);
+  const [genLang, setGenLang] = useState('python');
+  const [genDiff, setGenDiff] = useState('sedang');
+  const [genBusy, setGenBusy] = useState(false);
+  const [genMsg, setGenMsg] = useState('');
+  const [genDrafts, setGenDrafts] = useState<SoalForm[]>([]);
 
   useEffect(() => {
     fetch(`${API}/auth/me`, opt)
@@ -395,6 +403,86 @@ export default function Dashboard() {
     if (!confirm('Hapus paket ujian ini?')) return;
     await fetch(`${API}/exams/${id}`, { ...opt, method: 'DELETE' }).catch(() => undefined);
     loadExams(courseId);
+  };
+
+  const openGen = () => {
+    setGenMsg('');
+    setGenDrafts([]);
+    setGenMaterialIds([]);
+    setGenCount(2);
+    setGenLang('python');
+    setGenDiff('sedang');
+    setShowGen(true);
+  };
+
+  const toggleGenMaterial = (id: string) => {
+    setGenMaterialIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+  };
+
+  const generateSoal = async () => {
+    if (!openCourse) return;
+    if (!genMaterialIds.length) {
+      setGenMsg('Pilih minimal 1 materi.');
+      return;
+    }
+    setGenBusy(true);
+    setGenMsg('');
+    setGenDrafts([]);
+    try {
+      const r = await fetch(`${API}/courses/${openCourse.id}/generate-soal`, {
+        ...opt,
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          materialIds: genMaterialIds,
+          count: genCount,
+          language: genLang,
+          difficulty: genDiff,
+        }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        setGenMsg(d.message || 'Gagal generate.');
+      } else {
+        const drafts: SoalForm[] = (d.drafts ?? []).map(
+          (s: {
+            title: string;
+            description: string;
+            language: string;
+            difficulty: string;
+            starterCode: string;
+            testCases: CaseForm[];
+          }) => ({
+            id: null,
+            courseId: openCourse.id,
+            title: s.title,
+            language: s.language,
+            difficulty: s.difficulty,
+            description: s.description,
+            starterCode: s.starterCode,
+            setupSql: '',
+            testCases: s.testCases.map((t) => ({
+              stdin: t.stdin ?? '',
+              expected: t.expected ?? '',
+              points: Number(t.points) || 10,
+              hidden: !!t.hidden,
+            })),
+          }),
+        );
+        setGenDrafts(drafts);
+        if (!drafts.length) setGenMsg('Tidak ada soal dihasilkan. Coba lagi.');
+      }
+    } finally {
+      setGenBusy(false);
+    }
+  };
+
+  const reviewDraft = (draft: SoalForm) => {
+    setShowGen(false);
+    setSoalMsg('');
+    setSoal(draft);
   };
 
   const loadMaterials = async (courseId: string) => {
@@ -838,12 +926,20 @@ export default function Dashboard() {
                     </button>
                   </div>
                   <p className="mb-3 font-mono text-[11px] text-slate-500">{openCourse.problems.length} soal</p>
-                  <button
-                    onClick={() => newSoal(openCourse.id)}
-                    className="mb-3 w-full rounded bg-violet-600 px-3 py-2 text-xs font-medium text-white hover:bg-violet-500"
-                  >
-                    + Buat Soal
-                  </button>
+                  <div className="mb-3 flex gap-2">
+                    <button
+                      onClick={() => newSoal(openCourse.id)}
+                      className="flex-1 rounded bg-violet-600 px-3 py-2 text-xs font-medium text-white hover:bg-violet-500"
+                    >
+                      + Buat Soal
+                    </button>
+                    <button
+                      onClick={openGen}
+                      className="flex-1 rounded border border-violet-600 px-3 py-2 text-xs font-medium text-violet-300 hover:bg-violet-950/40"
+                    >
+                      ✨ Generate AI
+                    </button>
+                  </div>
                   <ul className="space-y-1">
                     {openCourse.problems.map((p) => (
                       <li key={p.id} className="flex items-center justify-between gap-2 rounded border border-slate-800 px-2 py-1 text-xs">
@@ -1307,6 +1403,113 @@ export default function Dashboard() {
                 {examBusy ? 'Menyimpan…' : 'Simpan'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showGen && openCourse && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 p-4">
+          <div className="my-4 w-full max-w-2xl rounded-xl border border-slate-700 bg-[#0b0e14] p-5 shadow-2xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-white">✨ Generate Soal dari Materi (AI)</h3>
+              <button onClick={() => setShowGen(false)} className="text-sm text-slate-500 hover:text-slate-300">
+                tutup
+              </button>
+            </div>
+            <p className="mb-3 text-xs text-slate-500">
+              AI (Ollama gemma4-16k) membuat draf soal dari materi terpilih. Tinjau &amp; simpan tiap soal.
+            </p>
+
+            <div className="mb-3">
+              <h4 className="mb-1 text-xs font-medium text-slate-300">Materi ({genMaterialIds.length} dipilih)</h4>
+              <div className="max-h-40 space-y-1 overflow-y-auto rounded border border-slate-800 p-2">
+                {materials.map((m) => (
+                  <label key={m.id} className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-xs hover:bg-slate-800/50">
+                    <input
+                      type="checkbox"
+                      checked={genMaterialIds.includes(m.id)}
+                      onChange={() => toggleGenMaterial(m.id)}
+                    />
+                    <span className="min-w-0 flex-1 truncate text-slate-200">{m.title}</span>
+                  </label>
+                ))}
+                {materials.length === 0 && (
+                  <p className="px-2 py-1 text-xs text-slate-600">Belum ada materi. Unggah materi dulu.</p>
+                )}
+              </div>
+            </div>
+
+            <div className="mb-3 grid grid-cols-3 gap-2">
+              <label className="text-xs text-slate-400">
+                Jumlah soal
+                <input
+                  type="number"
+                  min={1}
+                  max={5}
+                  value={genCount}
+                  onChange={(e) => setGenCount(Math.min(Math.max(Number(e.target.value) || 1, 1), 5))}
+                  className="mt-1 w-full rounded border border-slate-700 bg-[#0d1117] px-2 py-1.5 text-sm text-slate-100 outline-none focus:border-violet-500"
+                />
+              </label>
+              <label className="text-xs text-slate-400">
+                Bahasa
+                <select
+                  value={genLang}
+                  onChange={(e) => setGenLang(e.target.value)}
+                  className="mt-1 w-full rounded border border-slate-700 bg-[#0d1117] px-2 py-1.5 text-sm text-slate-100 outline-none focus:border-violet-500"
+                >
+                  {SOAL_LANGS.map((l) => (
+                    <option key={l} value={l}>{l}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="text-xs text-slate-400">
+                Kesulitan
+                <select
+                  value={genDiff}
+                  onChange={(e) => setGenDiff(e.target.value)}
+                  className="mt-1 w-full rounded border border-slate-700 bg-[#0d1117] px-2 py-1.5 text-sm text-slate-100 outline-none focus:border-violet-500"
+                >
+                  <option value="mudah">mudah</option>
+                  <option value="sedang">sedang</option>
+                  <option value="sulit">sulit</option>
+                </select>
+              </label>
+            </div>
+
+            {genMsg && <p className="mb-2 text-sm text-amber-400">{genMsg}</p>}
+            <button
+              onClick={generateSoal}
+              disabled={genBusy}
+              className="mb-4 w-full rounded bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500 disabled:opacity-60"
+            >
+              {genBusy ? 'Menghasilkan… (bisa ~1 menit)' : 'Generate'}
+            </button>
+
+            {genDrafts.length > 0 && (
+              <div className="border-t border-slate-800 pt-3">
+                <h4 className="mb-2 text-sm font-medium text-white">Draf Soal ({genDrafts.length})</h4>
+                <ul className="space-y-2">
+                  {genDrafts.map((d, i) => (
+                    <li key={i} className="rounded border border-slate-800 bg-[#0d1117] p-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="min-w-0 flex-1 truncate text-sm text-slate-200">{d.title}</span>
+                        <button
+                          onClick={() => reviewDraft(d)}
+                          className="shrink-0 rounded bg-violet-600 px-2 py-1 text-[11px] font-medium text-white hover:bg-violet-500"
+                        >
+                          Tinjau &amp; Simpan
+                        </button>
+                      </div>
+                      <p className="mt-1 line-clamp-2 text-xs text-slate-500">{d.description}</p>
+                      <p className="mt-1 font-mono text-[10px] text-slate-600">
+                        {d.language} · {d.difficulty} · {d.testCases.length} test case
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         </div>
       )}
