@@ -47,7 +47,19 @@ interface UserRow {
   status: string;
 }
 
-type Tab = 'monitor' | 'subs' | 'sim' | 'users' | 'examiners';
+interface Course {
+  id: string;
+  code: string | null;
+  name: string;
+  semester: number | null;
+  createdById: string | null;
+  _count: { problems: number };
+}
+interface CourseDetail extends Course {
+  problems: { id: string; title: string; language: string; difficulty: string }[];
+}
+
+type Tab = 'monitor' | 'subs' | 'sim' | 'users' | 'examiners' | 'courses';
 
 export default function Dashboard() {
   const router = useRouter();
@@ -65,6 +77,11 @@ export default function Dashboard() {
   const [examiners, setExaminers] = useState<string[]>([]);
   const [enrollName, setEnrollName] = useState('');
   const [enrollMsg, setEnrollMsg] = useState('');
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [openCourse, setOpenCourse] = useState<CourseDetail | null>(null);
+  const [ncName, setNcName] = useState('');
+  const [ncSem, setNcSem] = useState('');
+  const [courseMsg, setCourseMsg] = useState('');
 
   useEffect(() => {
     fetch(`${API}/auth/me`, opt)
@@ -111,6 +128,14 @@ export default function Dashboard() {
   useEffect(() => {
     if (me && tab === 'examiners') loadExaminers();
   }, [me, tab, loadExaminers]);
+
+  const loadCourses = useCallback(() => {
+    fetch(`${API}/courses`, opt).then((r) => r.json()).then(setCourses).catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
+    if (me && tab === 'courses') loadCourses();
+  }, [me, tab, loadCourses]);
 
   const loadSim = (id: string) => {
     setSimProblem(id);
@@ -182,6 +207,34 @@ export default function Dashboard() {
     loadExaminers();
   };
 
+  const openCourseDetail = async (id: string) => {
+    const r = await fetch(`${API}/courses/${id}`, opt);
+    if (r.ok) setOpenCourse(await r.json());
+  };
+
+  const createCourse = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCourseMsg('');
+    if (!ncName.trim()) {
+      setCourseMsg('Nama MK wajib.');
+      return;
+    }
+    const r = await fetch(`${API}/courses`, {
+      ...opt,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: ncName.trim(), semester: ncSem ? Number(ncSem) : undefined }),
+    });
+    if (r.ok) {
+      setNcName('');
+      setNcSem('');
+      setCourseMsg('MK ditambahkan.');
+      loadCourses();
+    } else {
+      setCourseMsg('Gagal menambah MK.');
+    }
+  };
+
   const logout = async () => {
     await fetch(`${API}/auth/logout`, { ...opt, method: 'POST' }).catch(() => undefined);
     router.replace('/welcome');
@@ -198,6 +251,7 @@ export default function Dashboard() {
     ['monitor', 'Monitoring Live'],
     ['subs', 'Submission & Nilai'],
     ['sim', 'Kemiripan Kode'],
+    ['courses', 'Mata Kuliah'],
     ['examiners', 'Wajah Penguji'],
   ];
   if (me.role === 'superadmin') tabs.push(['users', 'Kelola Penguji']);
@@ -369,6 +423,88 @@ export default function Dashboard() {
                 </tbody>
               </table>
             </div>
+          </div>
+        )}
+
+        {tab === 'courses' && (
+          <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+            <div className="space-y-5">
+              {[1, 2, 3, 4, 5, 6, 7, 8, null].map((sem) => {
+                const list = courses.filter((c) => c.semester === sem);
+                if (!list.length) return null;
+                return (
+                  <div key={String(sem)}>
+                    <h3 className="mb-2 font-mono text-xs text-slate-500">
+                      {sem ? `SEMESTER ${sem}` : 'TAMBAHAN DOSEN'}
+                    </h3>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {list.map((c) => (
+                        <button
+                          key={c.id}
+                          onClick={() => openCourseDetail(c.id)}
+                          className={`flex items-center justify-between rounded-lg border px-3 py-2 text-left text-sm transition ${
+                            openCourse?.id === c.id
+                              ? 'border-violet-500 bg-violet-950/30'
+                              : 'border-slate-800 bg-[#0b0e14] hover:border-violet-600'
+                          }`}
+                        >
+                          <span className="text-slate-200">{c.name}</span>
+                          <span className="ml-2 shrink-0 rounded bg-slate-800 px-2 py-0.5 font-mono text-[10px] text-slate-400">
+                            {c._count.problems} soal
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <aside className="space-y-5">
+              <form onSubmit={createCourse} className="rounded-lg border border-slate-800 bg-[#0b0e14] p-4">
+                <h3 className="mb-3 font-semibold text-white">Tambah Mata Kuliah</h3>
+                <input
+                  value={ncName}
+                  onChange={(e) => setNcName(e.target.value)}
+                  placeholder="Nama MK"
+                  className="mb-2 w-full rounded border border-slate-700 bg-[#0d1117] px-3 py-2 text-sm outline-none focus:border-violet-500"
+                />
+                <input
+                  value={ncSem}
+                  onChange={(e) => setNcSem(e.target.value)}
+                  type="number"
+                  min={1}
+                  max={8}
+                  placeholder="Semester (opsional)"
+                  className="mb-2 w-full rounded border border-slate-700 bg-[#0d1117] px-3 py-2 text-sm outline-none focus:border-violet-500"
+                />
+                {courseMsg && <p className="mb-2 text-sm text-amber-400">{courseMsg}</p>}
+                <button type="submit" className="w-full rounded bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500">
+                  Tambah
+                </button>
+              </form>
+              {openCourse && (
+                <div className="rounded-lg border border-slate-800 bg-[#0b0e14] p-4">
+                  <div className="mb-2 flex items-center justify-between">
+                    <h3 className="font-semibold text-white">{openCourse.name}</h3>
+                    <button onClick={() => setOpenCourse(null)} className="text-xs text-slate-500 hover:text-slate-300">
+                      tutup
+                    </button>
+                  </div>
+                  <p className="mb-3 font-mono text-[11px] text-slate-500">{openCourse.problems.length} soal</p>
+                  <ul className="space-y-1">
+                    {openCourse.problems.map((p) => (
+                      <li key={p.id} className="flex items-center justify-between rounded border border-slate-800 px-2 py-1 text-xs">
+                        <span className="text-slate-300">{p.title}</span>
+                        <span className="font-mono text-slate-500">{p.language}</span>
+                      </li>
+                    ))}
+                    {openCourse.problems.length === 0 && (
+                      <li className="text-xs text-slate-600">Belum ada soal (authoring soal menyusul).</li>
+                    )}
+                  </ul>
+                </div>
+              )}
+            </aside>
           </div>
         )}
 
