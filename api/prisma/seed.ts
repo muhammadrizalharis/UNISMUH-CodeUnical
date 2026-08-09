@@ -85,6 +85,36 @@ const PROBLEMS: ProblemSpec[] = [
       '#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    long long a, b;\n    cin >> a >> b;\n    // cetak jumlahnya di sini\n    return 0;\n}\n',
     testCases: SUM_CASES,
   },
+  {
+    title: 'Jumlah Dua Angka (TypeScript)',
+    description:
+      'Baca dua bilangan bulat dari input (dipisah spasi), lalu cetak jumlahnya. TypeScript di Node 22.',
+    language: 'typescript',
+    difficulty: 'mudah',
+    starterCode:
+      "const [a, b]: number[] = require('fs')\n  .readFileSync(0, 'utf8')\n  .trim()\n  .split(/\\s+/)\n  .map(Number);\n// cetak jumlahnya di sini\n",
+    testCases: SUM_CASES,
+  },
+  {
+    title: 'Jumlah Dua Angka (Go)',
+    description:
+      'Baca dua bilangan bulat dari input (dipisah spasi), lalu cetak jumlahnya. Gunakan Go.',
+    language: 'go',
+    difficulty: 'mudah',
+    starterCode:
+      'package main\n\nimport "fmt"\n\nfunc main() {\n\tvar a, b int64\n\tfmt.Scan(&a, &b)\n\t// cetak jumlahnya di sini\n}\n',
+    testCases: SUM_CASES,
+  },
+  {
+    title: 'Jumlah Dua Angka (Java)',
+    description:
+      'Baca dua bilangan bulat dari input (dipisah spasi), lalu cetak jumlahnya. Kelas publik WAJIB bernama Main.',
+    language: 'java',
+    difficulty: 'mudah',
+    starterCode:
+      'import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        long a = sc.nextLong(), b = sc.nextLong();\n        // cetak jumlahnya di sini\n    }\n}\n',
+    testCases: SUM_CASES,
+  },
 ];
 
 async function main() {

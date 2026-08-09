@@ -33,6 +33,14 @@ interface LangSpec {
   env: string[];
   /** Opsi mount /tmp. Bahasa terkompilasi butuh `exec` agar biner bisa dijalankan. */
   tmpfs: string;
+  /** Override batas memori container (mis. JVM butuh lebih). Default MEMORY. */
+  memory?: string;
+  /** Override jumlah CPU (mis. build Go lebih cepat). Default '1'. */
+  cpus?: string;
+  /** Override batas PID (mis. toolchain Go banyak proses). Default '128'. */
+  pids?: string;
+  /** Override timeout ms (mis. compile Go lambat). Default TIMEOUT_MS. */
+  timeoutMs?: number;
 }
 
 // Registry bahasa — TAMBAH BAHASA = tambah 1 entri di sini + `docker pull` image-nya.
@@ -72,6 +80,47 @@ const LANGS: Record<string, LangSpec> = {
     env: [],
     tmpfs: 'size=256m,exec',
   },
+  typescript: {
+    label: 'TypeScript (Node 22, strip-types)',
+    image: process.env.SANDBOX_NODE_IMAGE ?? 'node:22-slim',
+    file: 'main.ts',
+    // Node 22 menjalankan .ts langsung (hapus tipe); tanpa type-check (cocok untuk runner).
+    cmd: [
+      'node',
+      '--experimental-strip-types',
+      '--disable-warning=ExperimentalWarning',
+      '/work/main.ts',
+    ],
+    env: ['NODE_OPTIONS=--max-old-space-size=256'],
+    tmpfs: 'size=64m',
+  },
+  go: {
+    label: 'Go 1.23',
+    image: process.env.SANDBOX_GO_IMAGE ?? 'golang:1.23-bookworm',
+    file: 'main.go',
+    // Batasi paralelisme (-p 4/GOMAXPROCS=4) agar proses tak meledak; link Go tetap ~6s (cache dingin).
+    cmd: ['sh', '-c', 'go build -p 4 -o /tmp/a.out /work/main.go && exec /tmp/a.out'],
+    // GO111MODULE=off agar berkas tunggal (stdlib) bisa build tanpa go.mod.
+    env: ['GO111MODULE=off', 'GOCACHE=/tmp/.gocache', 'GOPATH=/tmp/.gopath', 'GOMAXPROCS=4'],
+    tmpfs: 'size=256m,exec',
+    cpus: '4',
+    pids: '256',
+    timeoutMs: 30000,
+  },
+  java: {
+    label: 'Java 21 (Temurin)',
+    image: process.env.SANDBOX_JAVA_IMAGE ?? 'eclipse-temurin:21-jdk',
+    file: 'Main.java',
+    // Kelas publik WAJIB bernama Main. JVM baca .class dari /tmp (tanpa perlu exec).
+    cmd: [
+      'sh',
+      '-c',
+      'javac -d /tmp /work/Main.java && exec java -XX:-UsePerfData -Xmx256m -cp /tmp Main',
+    ],
+    env: [],
+    tmpfs: 'size=256m',
+    memory: '768m',
+  },
 };
 
 export const SUPPORTED_LANGUAGES = Object.keys(LANGS);
@@ -109,7 +158,8 @@ export class ExecuteService {
         ...DOCKER_BASE,
         'run', '--rm', '-i', '--name', name,
         '--network', 'none',
-        '--memory', MEMORY, '--cpus', '1', '--pids-limit', '128',
+        '--memory', spec.memory ?? MEMORY,
+        '--cpus', spec.cpus ?? '1', '--pids-limit', spec.pids ?? '128',
         '--read-only', '--tmpfs', `/tmp:${spec.tmpfs}`,
         '--cap-drop', 'ALL', '--security-opt', 'no-new-privileges',
         '--user', '65534:65534',
@@ -118,7 +168,12 @@ export class ExecuteService {
         '-v', `${dir}:/work:ro`, '-w', '/work',
         spec.image, ...spec.cmd,
       ];
-      const result = await this.spawnCollect(runArgs, name, stdin);
+      const result = await this.spawnCollect(
+        runArgs,
+        name,
+        stdin,
+        spec.timeoutMs ?? TIMEOUT_MS,
+      );
       return { ...result, durationMs: Date.now() - started };
     } finally {
       await rm(dir, { recursive: true, force: true }).catch(() => undefined);
@@ -134,6 +189,7 @@ export class ExecuteService {
     runArgs: string[],
     name: string,
     stdin: string,
+    timeoutMs: number,
   ): Promise<Omit<ExecuteResult, 'durationMs'>> {
     return new Promise((resolve) => {
       const child = spawn(DOCKER_BIN, runArgs, {
@@ -154,7 +210,7 @@ export class ExecuteService {
       const timer = setTimeout(() => {
         timedOut = true;
         spawn(DOCKER_BIN, [...DOCKER_BASE, 'kill', name], { stdio: 'ignore' });
-      }, TIMEOUT_MS);
+      }, timeoutMs);
       child.on('close', (exitCode) => {
         clearTimeout(timer);
         resolve({
