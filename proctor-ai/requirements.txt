@@ -1,9 +1,12 @@
-fastapi==0.115.6
-uvicorn[standard]==0.32.1
-python-multipart==0.0.19
-ultralytics==8.3.58
-insightface==0.7.3
-onnxruntime-gpu==1.19.2
-opencv-python-headless==4.10.0.84
-numpy<2
-pillow==10.4.0
+# Service GPU proctor-ai. torch/torchvision/numpy DI-REUSE dari conda env py310 (JANGAN unduh
+# ulang) — venv dibuat --system-site-packages (lihat setup.sh). Sisanya dari PyPI.
+# CATATAN: facenet-pytorch dipasang dengan --no-deps agar tak menarik torch 2.2.x.
+facenet-pytorch
+ultralytics
+fastapi
+uvicorn[standard]
+python-multipart
+opencv-python-headless
+tqdm
+requests
+
