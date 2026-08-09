@@ -20,6 +20,7 @@ interface ProblemSpec {
   difficulty: string;
   starterCode: string;
   testCases: TC[];
+  setupSql?: string;
 }
 
 // Kontrak I/O sama untuk semua bahasa "Jumlah Dua Angka" agar mudah diuji lintas runner.
@@ -151,6 +152,19 @@ const PROBLEMS: ProblemSpec[] = [
       '<!doctype html>\n<html lang="id">\n<head>\n<meta charset="utf-8" />\n<style>\n  /* tulis gaya di sini */\n  body { font-family: system-ui, sans-serif; padding: 24px; }\n</style>\n</head>\n<body>\n  <!-- buat kartu profil di sini -->\n  <h1>Halo!</h1>\n</body>\n</html>\n',
     testCases: [],
   },
+  {
+    title: 'Skor Tertinggi (SQL)',
+    description:
+      'Dari tabel nilai, tampilkan nama dan skor peserta dengan skor TERTINGGI. Bila seri, tampilkan semua, urut nama A→Z. Kolom keluaran: nama, skor.',
+    language: 'sql',
+    difficulty: 'mudah',
+    setupSql:
+      "CREATE TABLE nilai (nama TEXT, skor INTEGER);\nINSERT INTO nilai VALUES ('Andi',80),('Budi',95),('Citra',88),('Dewi',95);",
+    starterCode: '-- tulis query SQL di sini\nSELECT nama, skor FROM nilai;\n',
+    testCases: [
+      { stdin: '', expected: 'Budi|95\nDewi|95', hidden: true, points: 3, order: 1 },
+    ],
+  },
 ];
 
 async function main() {
@@ -171,6 +185,7 @@ async function main() {
         language: spec.language,
         difficulty: spec.difficulty,
         starterCode: spec.starterCode,
+        setupSql: spec.setupSql ?? null,
         testCases: { create: spec.testCases },
       },
     });

@@ -64,6 +64,7 @@ export class ProblemsService {
         order: t.order,
       })),
       p.language,
+      p.setupSql ?? undefined,
     );
 
     await this.prisma.submission.create({

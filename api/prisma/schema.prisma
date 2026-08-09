@@ -14,6 +14,7 @@ model Problem {
   description String
   language    String       @default("python")
   starterCode String       @default("")
+  setupSql    String?      // untuk soal SQL: DDL + seed (ditampilkan ke peserta)
   difficulty  String       @default("mudah") // mudah | sedang | sulit
   timeLimitMs Int          @default(15000)
   createdAt   DateTime     @default(now())

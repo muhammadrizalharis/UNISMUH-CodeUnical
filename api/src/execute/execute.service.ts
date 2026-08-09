@@ -169,6 +169,15 @@ const LANGS: Record<string, LangSpec> = {
     env: [],
     tmpfs: 'size=64m',
   },
+  sql: {
+    label: 'SQL (SQLite)',
+    image: process.env.SANDBOX_SQLITE_IMAGE ?? 'codeunical-sqlite:latest',
+    file: 'main.sql',
+    // Jalankan skema+query di DB in-memory; kolom dipisah '|', tanpa header (deterministik).
+    runCmd: ['sh', '-c', 'sqlite3 -batch -noheader :memory: < /work/main.sql'],
+    env: [],
+    tmpfs: 'size=32m',
+  },
 };
 
 export const SUPPORTED_LANGUAGES = Object.keys(LANGS);

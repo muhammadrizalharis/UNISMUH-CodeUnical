@@ -44,6 +44,7 @@ export class GradingService {
     code: string,
     testCases: TestCaseInput[],
     language = 'python',
+    setup?: string,
   ): Promise<GradeResult> {
     const ordered = [...testCases].sort((a, b) => a.order - b.order);
     const results: CaseResult[] = [];
@@ -51,8 +52,10 @@ export class GradingService {
     let score = 0;
     let maxScore = 0;
 
+    // Untuk SQL: gabungkan skema (setup) + query peserta sebelum dieksekusi.
+    const execCode = setup ? `${setup}\n${code}` : code;
     // Compile SEKALI (bahasa terkompilasi); artefak dipakai ulang untuk tiap test case.
-    const prep = await this.execute.prepare(language, code);
+    const prep = await this.execute.prepare(language, execCode);
 
     // Gagal kompilasi -> seluruh test case gagal dengan pesan compile.
     if (!prep.ok) {
