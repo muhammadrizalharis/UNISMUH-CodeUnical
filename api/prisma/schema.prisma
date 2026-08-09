@@ -22,6 +22,7 @@ model Problem {
   createdAt   DateTime     @default(now())
   testCases   TestCase[]
   submissions Submission[]
+  examLinks   ExamProblem[]
 
   @@index([courseId])
 }
@@ -35,6 +36,7 @@ model Course {
   createdAt   DateTime   @default(now())
   problems    Problem[]
   materials   Material[]
+  exams       Exam[]
 
   @@index([semester])
 }
@@ -54,6 +56,34 @@ model Material {
   createdAt   DateTime @default(now())
 
   @@index([courseId])
+}
+
+model Exam {
+  id          String        @id @default(cuid())
+  courseId    String
+  course      Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title       String
+  description String        @default("")
+  durationMin Int           // durasi ujian (menit) — diisi manual dosen
+  startAt     DateTime      // jadwal mulai — manual
+  endAt       DateTime      // jadwal selesai — manual
+  published   Boolean       @default(false)
+  createdById String?
+  createdAt   DateTime      @default(now())
+  problems    ExamProblem[]
+
+  @@index([courseId])
+}
+
+model ExamProblem {
+  examId    String
+  problemId String
+  order     Int     @default(0)
+  exam      Exam    @relation(fields: [examId], references: [id], onDelete: Cascade)
+  problem   Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@id([examId, problemId])
+  @@index([problemId])
 }
 
 model TestCase {
