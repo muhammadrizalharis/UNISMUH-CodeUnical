@@ -17,6 +17,9 @@ const MONACO_LANG: Record<string, string> = {
   c: 'c',
   go: 'go',
   java: 'java',
+  php: 'php',
+  ruby: 'ruby',
+  rust: 'rust',
 };
 
 interface PublicCase {
