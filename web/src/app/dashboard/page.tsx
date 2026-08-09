@@ -77,6 +77,15 @@ interface SoalForm {
   testCases: CaseForm[];
 }
 
+interface Material {
+  id: string;
+  title: string;
+  filename: string;
+  mimeType: string;
+  size: number;
+  createdAt: string;
+}
+
 const SOAL_LANGS = [
   'python',
   'javascript',
@@ -119,6 +128,9 @@ export default function Dashboard() {
   const [soal, setSoal] = useState<SoalForm | null>(null);
   const [soalMsg, setSoalMsg] = useState('');
   const [soalBusy, setSoalBusy] = useState(false);
+  const [materials, setMaterials] = useState<Material[]>([]);
+  const [matMsg, setMatMsg] = useState('');
+  const [matBusy, setMatBusy] = useState(false);
 
   useEffect(() => {
     fetch(`${API}/auth/me`, opt)
@@ -247,6 +259,70 @@ export default function Dashboard() {
   const openCourseDetail = async (id: string) => {
     const r = await fetch(`${API}/courses/${id}`, opt);
     if (r.ok) setOpenCourse(await r.json());
+    loadMaterials(id);
+  };
+
+  const loadMaterials = async (courseId: string) => {
+    setMatMsg('');
+    const r = await fetch(`${API}/courses/${courseId}/materials`, opt);
+    if (r.ok) setMaterials(await r.json());
+    else setMaterials([]);
+  };
+
+  const uploadMaterial = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!openCourse) return;
+    const form = e.currentTarget as HTMLFormElement;
+    const fileInput = form.elements.namedItem('file') as HTMLInputElement;
+    const titleInput = form.elements.namedItem('title') as HTMLInputElement;
+    const file = fileInput?.files?.[0];
+    if (!file) {
+      setMatMsg('Pilih file dulu.');
+      return;
+    }
+    setMatBusy(true);
+    setMatMsg('');
+    const fd = new FormData();
+    fd.append('file', file);
+    if (titleInput?.value.trim()) fd.append('title', titleInput.value.trim());
+    const r = await fetch(`${API}/courses/${openCourse.id}/materials`, {
+      ...opt,
+      method: 'POST',
+      body: fd,
+    });
+    setMatBusy(false);
+    if (r.ok) {
+      form.reset();
+      setMatMsg('Materi diunggah.');
+      loadMaterials(openCourse.id);
+    } else {
+      const d = await r.json().catch(() => ({}));
+      setMatMsg(d.message || 'Gagal mengunggah.');
+    }
+  };
+
+  const downloadMaterial = async (m: Material) => {
+    const r = await fetch(`${API}/materials/${m.id}/download`, opt);
+    if (!r.ok) {
+      setMatMsg('Gagal mengunduh.');
+      return;
+    }
+    const blob = await r.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = m.filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  const deleteMaterial = async (id: string) => {
+    if (!openCourse) return;
+    if (!confirm('Hapus materi ini?')) return;
+    await fetch(`${API}/materials/${id}`, { ...opt, method: 'DELETE' }).catch(() => undefined);
+    loadMaterials(openCourse.id);
   };
 
   const emptyCase = (): CaseForm => ({ stdin: '', expected: '', points: 1, hidden: true });
@@ -656,6 +732,56 @@ export default function Dashboard() {
                       <li className="text-xs text-slate-600">Belum ada soal. Klik &ldquo;+ Buat Soal&rdquo;.</li>
                     )}
                   </ul>
+
+                  <div className="mt-4 border-t border-slate-800 pt-3">
+                    <h4 className="mb-2 text-sm font-medium text-white">Materi ({materials.length})</h4>
+                    <form onSubmit={uploadMaterial} className="mb-3 space-y-2">
+                      <input
+                        name="title"
+                        placeholder="Judul materi (opsional)"
+                        className="w-full rounded border border-slate-700 bg-[#0d1117] px-2 py-1 text-xs text-slate-100 outline-none focus:border-violet-500"
+                      />
+                      <input
+                        name="file"
+                        type="file"
+                        accept=".pdf,.ppt,.pptx,.doc,.docx,.txt,.md"
+                        className="block w-full text-xs text-slate-400 file:mr-2 file:rounded file:border-0 file:bg-slate-800 file:px-2 file:py-1 file:text-slate-200"
+                      />
+                      {matMsg && <p className="text-xs text-amber-400">{matMsg}</p>}
+                      <button
+                        type="submit"
+                        disabled={matBusy}
+                        className="w-full rounded bg-slate-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-600 disabled:opacity-50"
+                      >
+                        {matBusy ? 'Mengunggah…' : 'Unggah Materi'}
+                      </button>
+                    </form>
+                    <ul className="space-y-1">
+                      {materials.map((m) => (
+                        <li key={m.id} className="flex items-center justify-between gap-2 rounded border border-slate-800 px-2 py-1 text-xs">
+                          <button
+                            onClick={() => downloadMaterial(m)}
+                            className="min-w-0 flex-1 truncate text-left text-violet-300 hover:underline"
+                            title={m.filename}
+                          >
+                            {m.title}
+                          </button>
+                          <span className="shrink-0 font-mono text-[10px] text-slate-500">
+                            {(m.size / 1024).toFixed(0)}KB
+                          </span>
+                          <button
+                            onClick={() => deleteMaterial(m.id)}
+                            className="shrink-0 rounded bg-rose-950 px-1.5 py-0.5 text-[10px] text-rose-300 hover:bg-rose-900"
+                          >
+                            hapus
+                          </button>
+                        </li>
+                      ))}
+                      {materials.length === 0 && (
+                        <li className="text-xs text-slate-600">Belum ada materi.</li>
+                      )}
+                    </ul>
+                  </div>
                 </div>
               )}
             </aside>
