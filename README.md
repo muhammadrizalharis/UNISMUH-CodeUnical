@@ -154,13 +154,39 @@ CodeUnical/
 
 ```text
 [x] cetak biru & arsitektur
-[ ] MVP — editor + manual-typing + run python + autosave + timer
-[ ] auto-grade + bank soal + randomisasi
-[ ] proctoring jendela + 3-strike + keystroke replay
-[ ] code similarity + dashboard dosen live
-[ ] camera + face recognition penguji
-[ ] multi-bahasa (sql · c++ · html)
+[x] MVP — editor + manual-typing + run + autosave + timer
+[x] auto-grade + bank soal + randomisasi
+[x] proctoring jendela + 3-strike + keystroke replay
+[x] code similarity + dashboard dosen live
+[x] proctoring kamera on-device (MediaPipe)
+[x] multi-bahasa — 10 bahasa (py·js·ts·c·c++·java·go·php·ruby·rust), compile-once
+[x] auth 3-peran + gate super-admin (login lokal)
+[~] SSO UNISMUH — UI + alur siap, aktif saat kredensial dipasang
+[ ] face recognition penguji + deteksi HP (YOLO) — fase GPU
+[ ] MinIO bukti kamera · HTML/CSS live-preview · SQL
 ```
+
+<img src="assets/rule.svg" width="100%" alt="" />
+
+## `🔑` Konfigurasi SSO (opsional)
+
+Login SSO **non-aktif** sampai variabel berikut diisi di `api/.env`, lalu restart backend —
+tombol “Masuk dengan SSO UNISMUH” otomatis aktif:
+
+```env
+SSO_CLIENT_ID=...            # dari admin SSO UNISMUH
+SSO_CLIENT_SECRET=...
+SSO_AUTHORIZE_URL=https://sso.unismuh.ac.id/oauth/authorize
+SSO_TOKEN_URL=https://sso.unismuh.ac.id/oauth/token
+SSO_USERINFO_URL=https://sso.unismuh.ac.id/oauth/userinfo
+SSO_REDIRECT_URI=https://<domain-api>/auth/sso/callback
+# opsional — pemetaan peran dari klaim SSO:
+SSO_ROLE_CLAIM=role          # nama klaim peran (default: role)
+SSO_ROLE_DOSEN=dosen         # nilai klaim -> penguji
+SSO_ROLE_MAHASISWA=mahasiswa # nilai klaim -> peserta
+```
+
+Peran otomatis: **dosen → penguji**, **mahasiswa → peserta**, lainnya → *pending* (menunggu super-admin).
 
 <img src="assets/rule.svg" width="100%" alt="" />
 
