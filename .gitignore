@@ -59,3 +59,7 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+
+# ── Berkas aturan AI auto-generate (Next.js) ──
+AGENTS.md
+CLAUDE.md
