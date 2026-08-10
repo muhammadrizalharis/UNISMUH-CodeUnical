@@ -5,6 +5,9 @@
   "author": "",
   "private": true,
   "license": "UNLICENSED",
+  "overrides": {
+    "pdfjs-dist": ">=6.2.108"
+  },
   "scripts": {
     "build": "nest build",
     "postinstall": "prisma generate",
