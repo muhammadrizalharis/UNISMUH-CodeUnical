@@ -163,6 +163,7 @@ model ProctorSnapshot {
 
 model User {
   id           String    @id @default(cuid())
+  code         String?   @unique // ID institusi: "CU" + NIM/NBM (dari bagian email sebelum @)
   email        String    @unique
   name         String
   role         String    @default("peserta") // superadmin | penguji | peserta

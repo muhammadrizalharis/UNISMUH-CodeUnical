@@ -16,8 +16,15 @@ const scrypt = promisify(_scrypt);
 const SESSION_DAYS = 7;
 const BAD = 'Email atau sandi salah.';
 
+/** ID institusi = "CU" + NIM/NBM (bagian email sebelum @, hanya huruf/angka, kapital). */
+export function deriveUserCode(email: string): string | null {
+  const local = (email.split('@')[0] ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  return local ? `CU${local}` : null;
+}
+
 export interface UserRow {
   id: string;
+  code?: string | null;
   email: string;
   name: string;
   role: string;
@@ -30,6 +37,7 @@ export class AuthService implements OnModuleInit {
 
   async onModuleInit() {
     await this.ensureSuperadmin();
+    await this.backfillCodes();
   }
 
   private async hash(password: string): Promise<string> {
@@ -76,6 +84,21 @@ export class AuthService implements OnModuleInit {
     });
   }
 
+  /** Isi kolom code untuk user lama yang belum punya (idempoten; abaikan bila bentrok). */
+  private async backfillCodes() {
+    const users = await this.prisma.user.findMany({
+      where: { code: null },
+      select: { id: true, email: true },
+    });
+    for (const u of users) {
+      const code = deriveUserCode(u.email);
+      if (!code) continue;
+      await this.prisma.user
+        .update({ where: { id: u.id }, data: { code } })
+        .catch(() => undefined);
+    }
+  }
+
   async login(email: string, password: string, gate?: string) {
     const user = await this.prisma.user.findUnique({
       where: { email: email.toLowerCase().trim() },
@@ -118,7 +141,7 @@ export class AuthService implements OnModuleInit {
   }
 
   publicUser(u: UserRow): UserRow {
-    return { id: u.id, email: u.email, name: u.name, role: u.role, status: u.status };
+    return { id: u.id, code: u.code ?? null, email: u.email, name: u.name, role: u.role, status: u.status };
   }
 
   /** Login via SSO (Authorization Code). Upsert user + tautkan ssoSub; hormati peran manual. */
@@ -138,13 +161,13 @@ export class AuthService implements OnModuleInit {
       const status = profile.mappedRole === 'pending' ? 'pending' : 'active';
       const role = profile.mappedRole === 'pending' ? 'peserta' : profile.mappedRole;
       user = await this.prisma.user.create({
-        data: { email, name: profile.name, role, status, ssoSub: profile.sub },
+        data: { email, name: profile.name, role, status, ssoSub: profile.sub, code: deriveUserCode(email) },
       });
     } else {
       // Sudah ada: tautkan ssoSub bila belum. JANGAN turunkan peran yang sudah diberikan manual.
       await this.prisma.user.update({
         where: { id: user.id },
-        data: { ssoSub: user.ssoSub ?? profile.sub, lastLoginAt: new Date() },
+        data: { ssoSub: user.ssoSub ?? profile.sub, code: user.code ?? deriveUserCode(email), lastLoginAt: new Date() },
       });
       user = await this.prisma.user.findUnique({ where: { id: user.id } });
     }
@@ -157,13 +180,15 @@ export class AuthService implements OnModuleInit {
   }
 
   async createPenguji(email: string, name: string, password: string) {
+    const normEmail = email.toLowerCase().trim();
     const created = await this.prisma.user.create({
       data: {
-        email: email.toLowerCase().trim(),
+        email: normEmail,
         name,
         role: 'penguji',
         status: 'active',
         passwordHash: await this.hash(password),
+        code: deriveUserCode(normEmail),
       },
     });
     return this.publicUser(created);
@@ -171,7 +196,7 @@ export class AuthService implements OnModuleInit {
 
   listUsers() {
     return this.prisma.user.findMany({
-      select: { id: true, email: true, name: true, role: true, status: true, lastLoginAt: true },
+      select: { id: true, code: true, email: true, name: true, role: true, status: true, lastLoginAt: true },
       orderBy: { createdAt: 'asc' },
     });
   }
