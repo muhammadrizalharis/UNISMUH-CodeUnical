@@ -22,6 +22,7 @@ export function useCamera(attemptId: string | null, enabled: boolean) {
   const loopRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const absentSinceRef = useRef<number | null>(null);
   const lastSnapRef = useRef<Record<string, number>>({});
+  const visionFacesRef = useRef<number | null>(null); // jumlah wajah versi GPU (MTCNN)
 
   const [status, setStatus] = useState<CamStatus>('off');
   const [faces, setFaces] = useState(1);
@@ -96,6 +97,7 @@ export function useCamera(attemptId: string | null, enabled: boolean) {
       if (!res.ok) return;
       const d = await res.json();
       if (d?.ok) {
+        visionFacesRef.current = d.detected?.face_count ?? null;
         setVision({
           violations: d.violations ?? [],
           faceCount: d.detected?.face_count ?? 0,
@@ -184,9 +186,15 @@ export function useCamera(attemptId: string | null, enabled: boolean) {
               if (absentSinceRef.current == null) {
                 absentSinceRef.current = Date.now();
               } else if (Date.now() - absentSinceRef.current > 5000) {
-                logCamEvent('camera_face_absent');
-                void snapshot('face_absent');
-                absentSinceRef.current = Date.now(); // re-arm 5 dtk
+                // Cross-check GPU (MTCNN lebih tangguh thd backlight/oklusi):
+                // jangan tandai "wajah hilang" bila GPU masih melihat wajah.
+                if ((visionFacesRef.current ?? 0) >= 1) {
+                  absentSinceRef.current = Date.now();
+                } else {
+                  logCamEvent('camera_face_absent');
+                  void snapshot('face_absent');
+                  absentSinceRef.current = Date.now(); // re-arm 5 dtk
+                }
               }
             } else {
               absentSinceRef.current = null;

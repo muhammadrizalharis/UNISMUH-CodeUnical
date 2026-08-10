@@ -47,6 +47,7 @@ export function useProctor() {
     try {
       const res = await fetch(`${API}/attempts`, {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ problemId, examId }),
       });

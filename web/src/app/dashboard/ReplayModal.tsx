@@ -28,9 +28,11 @@ interface Snap {
 
 export function ReplayModal({
   attemptId,
+  peserta,
   onClose,
 }: {
   attemptId: string;
+  peserta?: { name: string; code: string | null } | null;
   onClose: () => void;
 }) {
   const [data, setData] = useState<Replay | null>(null);
@@ -86,7 +88,7 @@ export function ReplayModal({
       >
         <div className="flex items-center justify-between border-b border-slate-800 px-4 py-2">
           <span className="font-mono text-sm text-slate-400">
-            🎬 Replay ketikan · {attemptId.slice(-6)}
+            🎬 {peserta ? `${peserta.name}${peserta.code ? ' · ' + peserta.code : ''}` : 'Anonim'} · {attemptId.slice(-6)}
           </span>
           <button onClick={onClose} className="text-slate-500 hover:text-white">
             ✕

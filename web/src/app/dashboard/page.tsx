@@ -21,6 +21,8 @@ interface Attempt {
   live: boolean;
   events: number;
   keystrokes: number;
+  peserta?: { name: string; code: string | null } | null;
+  examTitle?: string | null;
 }
 interface Sub {
   id: string;
@@ -898,6 +900,7 @@ export default function Dashboard() {
             <table className="w-full text-left text-sm">
               <thead className="bg-[#0b0e14] font-mono text-xs text-slate-500">
                 <tr>
+                  <th className="px-4 py-2">Peserta</th>
                   <th className="px-4 py-2">Attempt</th>
                   <th className="px-4 py-2">Status</th>
                   <th className="px-4 py-2">Strike</th>
@@ -910,11 +913,26 @@ export default function Dashboard() {
               <tbody>
                 {attempts.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-4 py-6 text-center text-slate-600">Belum ada peserta.</td>
+                    <td colSpan={8} className="px-4 py-6 text-center text-slate-600">Belum ada peserta.</td>
                   </tr>
                 )}
                 {attempts.map((a) => (
                   <tr key={a.id} className="border-t border-slate-800 font-mono">
+                    <td className="px-4 py-2">
+                      {a.peserta ? (
+                        <span>
+                          <span className="text-slate-200">{a.peserta.name}</span>
+                          {a.peserta.code && (
+                            <span className="ml-1 text-[10px] text-slate-500">{a.peserta.code}</span>
+                          )}
+                        </span>
+                      ) : (
+                        <span className="text-slate-600">Anonim</span>
+                      )}
+                      {a.examTitle && (
+                        <div className="text-[10px] text-slate-600">{a.examTitle}</div>
+                      )}
+                    </td>
                     <td className="px-4 py-2 text-slate-400">{a.id.slice(-6)}</td>
                     <td className="px-4 py-2">
                       <span className={a.status === 'kicked' ? 'text-rose-400' : a.status === 'active' ? 'text-emerald-400' : 'text-slate-400'}>
@@ -1895,7 +1913,13 @@ export default function Dashboard() {
         </div>
       )}
 
-      {replayId && <ReplayModal attemptId={replayId} onClose={() => setReplayId(null)} />}
+      {replayId && (
+        <ReplayModal
+          attemptId={replayId}
+          peserta={attempts.find((a) => a.id === replayId)?.peserta ?? null}
+          onClose={() => setReplayId(null)}
+        />
+      )}
     </div>
   );
 }
