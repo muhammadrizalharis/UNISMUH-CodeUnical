@@ -8,6 +8,7 @@ import {
 interface ExecuteDto {
   language?: string;
   code?: string;
+  stdin?: string;
 }
 
 @Controller('execute')
@@ -23,6 +24,7 @@ export class ExecuteController {
   async run(@Body() body: ExecuteDto) {
     const code = body?.code ?? '';
     const language = body?.language ?? 'python';
+    const stdin = typeof body?.stdin === 'string' ? body.stdin.slice(0, 10_000) : '';
     if (typeof code !== 'string' || code.length === 0) {
       throw new BadRequestException('Kode kosong.');
     }
@@ -34,6 +36,6 @@ export class ExecuteController {
         `Bahasa "${language}" belum didukung. Didukung: ${SUPPORTED_LANGUAGES.join(', ')}.`,
       );
     }
-    return this.execute.run(language, code);
+    return this.execute.run(language, code, stdin);
   }
 }

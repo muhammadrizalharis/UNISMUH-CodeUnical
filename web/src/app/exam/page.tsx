@@ -103,6 +103,7 @@ export default function ExamPage() {
   const [pasteHits, setPasteHits] = useState(0);
   const [htmlSaved, setHtmlSaved] = useState(false);
   const [previewCode, setPreviewCode] = useState('');
+  const [customStdin, setCustomStdin] = useState('');
   const [secondsLeft, setSecondsLeft] = useState(EXAM_SECONDS);
   const [examId] = useState<string | null>(() =>
     typeof window !== 'undefined'
@@ -244,7 +245,7 @@ export default function ExamPage() {
       const res = await fetch(`${API}/execute`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ language: problem?.language ?? 'python', code: runCode }),
+        body: JSON.stringify({ language: problem?.language ?? 'python', code: runCode, stdin: customStdin }),
       });
       setOutput((await res.json()) as RunResult);
     } catch (e) {
@@ -491,17 +492,32 @@ export default function ExamPage() {
                   ))}
                 </>
               ))}
-            {tab === 'run' &&
-              (!output ? (
-                <span className="text-slate-600">Klik ▶ Run untuk mencoba kode.</span>
-              ) : (
-                <>
-                  {output.stdout && <pre className="whitespace-pre-wrap text-slate-200">{output.stdout}</pre>}
-                  {output.stderr && <pre className="whitespace-pre-wrap text-rose-400">{output.stderr}</pre>}
-                  {output.timedOut && <pre className="text-amber-400">⏱ melebihi batas waktu.</pre>}
-                  <div className="mt-3 text-xs text-slate-600">exit={String(output.exitCode)} · {output.durationMs} ms</div>
-                </>
-              ))}
+            {tab === 'run' && (
+              <div className="space-y-3">
+                <div>
+                  <label className="mb-1 block text-[11px] text-slate-500">
+                    Input (stdin) — untuk soal yang membaca input()
+                  </label>
+                  <textarea
+                    value={customStdin}
+                    onChange={(e) => setCustomStdin(e.target.value)}
+                    rows={2}
+                    placeholder="mis. 2 3"
+                    className="w-full rounded border border-slate-700 bg-[#0d1117] p-2 font-mono text-xs text-slate-100 outline-none focus:border-violet-500"
+                  />
+                </div>
+                {!output ? (
+                  <span className="text-slate-600">Klik ▶ Run untuk mencoba kode.</span>
+                ) : (
+                  <>
+                    {output.stdout && <pre className="whitespace-pre-wrap text-slate-200">{output.stdout}</pre>}
+                    {output.stderr && <pre className="whitespace-pre-wrap text-rose-400">{output.stderr}</pre>}
+                    {output.timedOut && <pre className="text-amber-400">⏱ melebihi batas waktu.</pre>}
+                    <div className="mt-3 text-xs text-slate-600">exit={String(output.exitCode)} · {output.durationMs} ms</div>
+                  </>
+                )}
+              </div>
+            )}
           </div>
         </div>
         )}
