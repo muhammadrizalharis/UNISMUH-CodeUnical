@@ -116,7 +116,7 @@ export function useCamera(attemptId: string | null, enabled: boolean) {
       setStatus('starting');
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: 320, height: 240, facingMode: 'user' },
+          video: { width: 640, height: 480, facingMode: 'user' },
           audio: false,
         });
         if (cancelled) {
@@ -147,7 +147,7 @@ export function useCamera(attemptId: string | null, enabled: boolean) {
             modelAssetPath: `${location.origin}/mediapipe/blaze_face_short_range.tflite`,
           },
           runningMode: 'VIDEO',
-          minDetectionConfidence: 0.5,
+          minDetectionConfidence: 0.4,
         });
         if (cancelled) {
           det.close();
