@@ -1,9 +1,18 @@
-import { Body, Controller, Get, Post, BadRequestException } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  BadRequestException,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ExecuteService,
   SUPPORTED_LANGUAGES,
   LANGUAGE_LABELS,
 } from './execute.service';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
 
 interface ExecuteDto {
   language?: string;
@@ -21,6 +30,8 @@ export class ExecuteController {
   }
 
   @Post()
+  @UseGuards(RolesGuard)
+  @Roles('peserta', 'penguji', 'superadmin')
   async run(@Body() body: ExecuteDto) {
     const code = body?.code ?? '';
     const language = body?.language ?? 'python';

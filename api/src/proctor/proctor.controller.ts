@@ -14,7 +14,11 @@ import { ProctorService } from './proctor.service';
 import { AuthService } from '../auth/auth.service';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
+import { SkipThrottle } from '@nestjs/throttler';
 
+// Telemetry proctoring real-time (heartbeat/events/vision/snapshot) TIDAK boleh kena
+// rate-limit: banyak peserta berbagi 1 IP (NAT lab) -> wajib dikecualikan.
+@SkipThrottle()
 @Controller('attempts')
 export class ProctorController {
   constructor(
@@ -88,6 +92,7 @@ export class ProctorController {
   }
 }
 
+@SkipThrottle()
 @Controller('snapshots')
 export class SnapshotController {
   constructor(private readonly proctor: ProctorService) {}

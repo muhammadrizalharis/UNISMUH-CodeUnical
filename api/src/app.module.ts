@@ -17,8 +17,16 @@ import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
-    // Rate-limit global: 300 permintaan / menit / IP (cegah brute-force & spam).
-    ThrottlerModule.forRoot({ throttlers: [{ ttl: 60_000, limit: 300 }] }),
+    // Rate-limit global anti-DoS kasar (per-IP). Sengaja longgar krn banyak peserta
+    // bisa berbagi 1 IP publik (NAT lab kampus / tunnel). Setel via env bila perlu.
+    ThrottlerModule.forRoot({
+      throttlers: [
+        {
+          ttl: Number(process.env.THROTTLE_TTL_MS ?? 60_000),
+          limit: Number(process.env.THROTTLE_LIMIT ?? 1200),
+        },
+      ],
+    }),
     PrismaModule,
     AuthModule,
     ExecuteModule,

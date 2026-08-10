@@ -265,6 +265,7 @@ export default function ExamPage() {
           : code;
       const res = await fetch(`${API}/execute`, {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ language: problem?.language ?? 'python', code: runCode, stdin: customStdin }),
       });

@@ -10,6 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
+import { Throttle, SkipThrottle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { RolesGuard } from './roles.guard';
 import { Roles } from './roles.decorator';
@@ -29,6 +30,7 @@ export class AuthController {
   constructor(private readonly auth: AuthService) {}
 
   @Post('login')
+  @Throttle({ default: { ttl: 60_000, limit: 60 } })
   async login(
     @Body() body: { email?: string; password?: string; gate?: string },
     @Res({ passthrough: true }) res: Response,
@@ -42,6 +44,7 @@ export class AuthController {
   }
 
   @Get('me')
+  @SkipThrottle()
   async me(@Req() req: Request & { cookies?: Record<string, string> }) {
     return this.auth.getSessionUser(req.cookies?.[COOKIE]);
   }
