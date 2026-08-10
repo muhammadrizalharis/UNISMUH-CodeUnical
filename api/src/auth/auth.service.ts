@@ -207,12 +207,19 @@ export class AuthService implements OnModuleInit {
     return this.publicUser(created);
   }
 
-  /** ACC/aktivasi atau penonaktifan akun oleh super admin. */
+  /** ACC/aktivasi atau penonaktifan akun oleh super admin.
+   *  Akun `pending` (mis. staff dari SSO) yang di-ACC otomatis jadi `penguji`. */
   async setStatus(id: string, status: 'active' | 'suspended' | 'pending') {
-    const updated = await this.prisma.user
-      .update({ where: { id }, data: { status } })
-      .catch(() => null);
-    if (!updated) throw new NotFoundException('Akun tidak ditemukan.');
+    const current = await this.prisma.user.findUnique({
+      where: { id },
+      select: { status: true, role: true },
+    });
+    if (!current) throw new NotFoundException('Akun tidak ditemukan.');
+    const data: { status: string; role?: string } = { status };
+    if (status === 'active' && current.status === 'pending' && current.role !== 'superadmin') {
+      data.role = 'penguji';
+    }
+    const updated = await this.prisma.user.update({ where: { id }, data });
     return this.publicUser(updated);
   }
 

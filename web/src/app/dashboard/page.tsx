@@ -1071,9 +1071,10 @@ export default function Dashboard() {
               </form>
 
               <div className="rounded-lg border border-slate-800 bg-[#0b0e14] p-4">
-                <h3 className="mb-1 font-semibold text-white">Impor dari SICEKCOK</h3>
+                <h3 className="mb-1 font-semibold text-white">Impor Manual (cadangan)</h3>
                 <p className="mb-3 text-xs text-slate-500">
-                  Tarik daftar mata kuliah dari sistem akademik (query <code className="text-slate-400">jadwal</code>) per periode.
+                  Nanti mata kuliah <b className="text-slate-400">otomatis</b> tersinkron dari SICEKCOK.
+                  Impor manual ini hanya cadangan bila di SICEKCOK belum ada/belum lengkap.
                 </p>
                 <input
                   value={impPeriode}
