@@ -9,6 +9,7 @@ const opt: RequestInit = { credentials: 'include' };
 
 interface Me {
   id: string;
+  code?: string | null;
   name: string;
   email: string;
   role: string;
@@ -41,6 +42,7 @@ interface SimPair {
 }
 interface UserRow {
   id: string;
+  code?: string | null;
   email: string;
   name: string;
   role: string;
@@ -699,7 +701,7 @@ export default function Dashboard() {
             UNISMUH <span className="text-violet-400">CodeUnical</span> · Dashboard
           </h1>
           <p className="font-mono text-xs text-slate-500">
-            {me.name} · <span className="text-violet-400">{me.role}</span>
+            {me.code && <span className="text-slate-300">{me.code}</span>} {me.code && '· '}{me.name} · <span className="text-violet-400">{me.role}</span>
           </p>
         </div>
         <div className="flex items-center gap-4 text-sm">
@@ -840,6 +842,7 @@ export default function Dashboard() {
               <table className="w-full text-left text-sm">
                 <thead className="bg-[#0b0e14] font-mono text-xs text-slate-500">
                   <tr>
+                    <th className="px-4 py-2">ID</th>
                     <th className="px-4 py-2">Nama</th>
                     <th className="px-4 py-2">Email</th>
                     <th className="px-4 py-2">Peran</th>
@@ -849,6 +852,7 @@ export default function Dashboard() {
                 <tbody>
                   {users.map((u) => (
                     <tr key={u.id} className="border-t border-slate-800">
+                      <td className="px-4 py-2 font-mono text-slate-300">{u.code ?? '—'}</td>
                       <td className="px-4 py-2">{u.name}</td>
                       <td className="px-4 py-2 font-mono text-slate-400">{u.email}</td>
                       <td className="px-4 py-2 text-violet-400">{u.role}</td>
