@@ -137,6 +137,8 @@ export class AuthService implements OnModuleInit {
       include: { user: true },
     });
     if (!session || session.expiresAt < new Date()) return null;
+    // Tolak sesi milik akun yang di-suspend/pending (mis. di-suspend setelah login).
+    if (session.user.status !== 'active') return null;
     return this.publicUser(session.user);
   }
 
@@ -239,6 +241,10 @@ export class AuthService implements OnModuleInit {
       data.role = 'penguji';
     }
     const updated = await this.prisma.user.update({ where: { id }, data });
+    // Nonaktif/tunda -> cabut semua sesi aktif akun ini seketika.
+    if (status !== 'active') {
+      await this.prisma.session.deleteMany({ where: { userId: id } });
+    }
     return this.publicUser(updated);
   }
 
