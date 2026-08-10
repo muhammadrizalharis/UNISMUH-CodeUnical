@@ -5,8 +5,9 @@ import { PrismaService } from '../prisma/prisma.service';
 export class MonitorService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async attempts() {
+  async attempts(examId?: string) {
     const rows = await this.prisma.examAttempt.findMany({
+      where: examId ? { examId } : undefined,
       orderBy: { startedAt: 'desc' },
       take: 100,
       include: { _count: { select: { events: true, keystrokes: true } } },
@@ -45,6 +46,31 @@ export class MonitorService {
         examTitle: a.examId ? (eMap.get(a.examId)?.title ?? null) : null,
       };
     });
+  }
+
+  /** Daftar ujian yang punya attempt (untuk dropdown filter monitoring). */
+  async examFilters() {
+    const grouped = await this.prisma.examAttempt.groupBy({
+      by: ['examId'],
+      where: { examId: { not: null } },
+      _count: { _all: true },
+    });
+    const ids = grouped.map((g) => g.examId).filter(Boolean) as string[];
+    const exams = ids.length
+      ? await this.prisma.exam.findMany({
+          where: { id: { in: ids } },
+          select: { id: true, title: true },
+        })
+      : [];
+    const tMap = new Map(exams.map((e) => [e.id, e.title]));
+    return grouped
+      .filter((g) => g.examId)
+      .map((g) => ({
+        id: g.examId as string,
+        title: tMap.get(g.examId as string) ?? '(ujian terhapus)',
+        count: g._count._all,
+      }))
+      .sort((a, b) => b.count - a.count);
   }
 
   submissions(problemId?: string) {

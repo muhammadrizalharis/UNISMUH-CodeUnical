@@ -154,6 +154,8 @@ export default function Dashboard() {
   const [me, setMe] = useState<Me | null | undefined>(undefined);
   const [tab, setTab] = useState<Tab>('monitor');
   const [attempts, setAttempts] = useState<Attempt[]>([]);
+  const [examFilter, setExamFilter] = useState('');
+  const [examOptions, setExamOptions] = useState<{ id: string; title: string; count: number }[]>([]);
   const [subs, setSubs] = useState<Sub[]>([]);
   const [problems, setProblems] = useState<ProblemLite[]>([]);
   const [simProblem, setSimProblem] = useState('');
@@ -231,14 +233,16 @@ export default function Dashboard() {
   }, [router]);
 
   const poll = useCallback(() => {
-    fetch(`${API}/monitor/attempts`, opt).then((r) => r.json()).then(setAttempts).catch(() => undefined);
+    const q = examFilter ? `?examId=${encodeURIComponent(examFilter)}` : '';
+    fetch(`${API}/monitor/attempts${q}`, opt).then((r) => r.json()).then(setAttempts).catch(() => undefined);
     fetch(`${API}/monitor/submissions`, opt).then((r) => r.json()).then(setSubs).catch(() => undefined);
-  }, []);
+  }, [examFilter]);
 
   useEffect(() => {
     if (!me) return;
     poll();
     fetch(`${API}/problems`, opt).then((r) => r.json()).then(setProblems).catch(() => undefined);
+    fetch(`${API}/monitor/exam-filters`, opt).then((r) => r.json()).then(setExamOptions).catch(() => undefined);
     const t = setInterval(poll, 4000);
     return () => clearInterval(t);
   }, [me, poll]);
@@ -901,7 +905,31 @@ export default function Dashboard() {
 
       <main className="p-6">
         {tab === 'monitor' && (
-          <div className="overflow-hidden rounded-lg border border-slate-800">
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              <label className="text-slate-500">Filter ujian:</label>
+              <select
+                value={examFilter}
+                onChange={(e) => setExamFilter(e.target.value)}
+                className="rounded border border-slate-700 bg-[#0b0e14] px-2 py-1 text-slate-200"
+              >
+                <option value="">Semua ujian</option>
+                {examOptions.map((e) => (
+                  <option key={e.id} value={e.id}>
+                    {e.title} ({e.count})
+                  </option>
+                ))}
+              </select>
+              {examFilter && (
+                <button
+                  onClick={() => setExamFilter('')}
+                  className="text-xs text-slate-500 hover:text-slate-300"
+                >
+                  ✕ reset
+                </button>
+              )}
+            </div>
+            <div className="overflow-hidden rounded-lg border border-slate-800">
             <table className="w-full text-left text-sm">
               <thead className="bg-[#0b0e14] font-mono text-xs text-slate-500">
                 <tr>
@@ -957,6 +985,7 @@ export default function Dashboard() {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         )}
 

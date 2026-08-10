@@ -10,8 +10,13 @@ export class MonitorController {
   constructor(private readonly monitor: MonitorService) {}
 
   @Get('attempts')
-  attempts() {
-    return this.monitor.attempts();
+  attempts(@Query('examId') examId?: string) {
+    return this.monitor.attempts(examId || undefined);
+  }
+
+  @Get('exam-filters')
+  examFilters() {
+    return this.monitor.examFilters();
   }
 
   @Get('submissions')
