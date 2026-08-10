@@ -5,21 +5,31 @@ import {
   Get,
   Param,
   Post,
+  Req,
   Res,
   UseGuards,
 } from '@nestjs/common';
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
 import { ProctorService } from './proctor.service';
+import { AuthService } from '../auth/auth.service';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 
 @Controller('attempts')
 export class ProctorController {
-  constructor(private readonly proctor: ProctorService) {}
+  constructor(
+    private readonly proctor: ProctorService,
+    private readonly auth: AuthService,
+  ) {}
 
   @Post()
-  create(@Body() body: { problemId?: string; examId?: string }) {
-    return this.proctor.createAttempt(body?.problemId, body?.examId);
+  async create(
+    @Body() body: { problemId?: string; examId?: string },
+    @Req() req: Request & { cookies?: Record<string, string> },
+  ) {
+    // Tautkan attempt ke peserta bila ada sesi login (best-effort; anonim tetap boleh).
+    const user = await this.auth.getSessionUser(req.cookies?.['codeunical_session']);
+    return this.proctor.createAttempt(body?.problemId, body?.examId, user?.id ?? undefined);
   }
 
   @Post(':id/events')

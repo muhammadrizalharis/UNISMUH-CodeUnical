@@ -115,6 +115,7 @@ model ExamAttempt {
   id         String         @id @default(cuid())
   problemId  String?
   examId     String?
+  userId     String?
   status     String         @default("active") // active | kicked | finished
   strikes    Int            @default(0)
   startedAt  DateTime       @default(now())
@@ -125,6 +126,7 @@ model ExamAttempt {
   snapshots  ProctorSnapshot[]
 
   @@index([examId])
+  @@index([userId])
 }
 
 model ProctorEvent {

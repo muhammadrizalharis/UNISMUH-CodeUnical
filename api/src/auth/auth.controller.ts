@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   Get,
+  Param,
   Post,
   Req,
   Res,
@@ -64,13 +65,27 @@ export class AuthController {
   @Post('users')
   @UseGuards(RolesGuard)
   @Roles('superadmin')
-  createUser(@Body() body: { email?: string; name?: string; password?: string }) {
+  createUser(
+    @Body() body: { email?: string; name?: string; password?: string; role?: string },
+  ) {
     if (!body?.email || !body?.name || !body?.password) {
       throw new BadRequestException('email, name, password wajib.');
     }
     if (body.password.length < 8) {
       throw new BadRequestException('Sandi minimal 8 karakter.');
     }
-    return this.auth.createPenguji(body.email, body.name, body.password);
+    const role = body.role === 'peserta' ? 'peserta' : 'penguji';
+    return this.auth.createAccount(body.email, body.name, body.password, role);
+  }
+
+  @Post('users/:id/status')
+  @UseGuards(RolesGuard)
+  @Roles('superadmin')
+  setStatus(@Param('id') id: string, @Body() body: { status?: string }) {
+    const status = body?.status ?? '';
+    if (!['active', 'suspended', 'pending'].includes(status)) {
+      throw new BadRequestException('status harus active | suspended | pending.');
+    }
+    return this.auth.setStatus(id, status as 'active' | 'suspended' | 'pending');
   }
 }

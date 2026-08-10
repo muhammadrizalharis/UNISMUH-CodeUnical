@@ -1,5 +1,7 @@
 import {
+  BadRequestException,
   Injectable,
+  NotFoundException,
   OnModuleInit,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -179,19 +181,39 @@ export class AuthService implements OnModuleInit {
     return { token, user: this.publicUser(user) };
   }
 
-  async createPenguji(email: string, name: string, password: string) {
+  async createAccount(
+    email: string,
+    name: string,
+    password: string,
+    role: 'penguji' | 'peserta' = 'penguji',
+    status: 'active' | 'pending' = 'active',
+  ) {
     const normEmail = email.toLowerCase().trim();
+    const existing = await this.prisma.user.findUnique({
+      where: { email: normEmail },
+      select: { id: true },
+    });
+    if (existing) throw new BadRequestException('Email sudah terdaftar.');
     const created = await this.prisma.user.create({
       data: {
         email: normEmail,
         name,
-        role: 'penguji',
-        status: 'active',
+        role,
+        status,
         passwordHash: await this.hash(password),
         code: deriveUserCode(normEmail),
       },
     });
     return this.publicUser(created);
+  }
+
+  /** ACC/aktivasi atau penonaktifan akun oleh super admin. */
+  async setStatus(id: string, status: 'active' | 'suspended' | 'pending') {
+    const updated = await this.prisma.user
+      .update({ where: { id }, data: { status } })
+      .catch(() => null);
+    if (!updated) throw new NotFoundException('Akun tidak ditemukan.');
+    return this.publicUser(updated);
   }
 
   listUsers() {
