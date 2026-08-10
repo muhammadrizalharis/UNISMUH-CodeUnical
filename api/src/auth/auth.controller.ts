@@ -15,10 +15,11 @@ import { RolesGuard } from './roles.guard';
 import { Roles } from './roles.decorator';
 
 const COOKIE = 'codeunical_session';
+// secure:true WAJIB saat dilayani via HTTPS (produksi) -> set COOKIE_SECURE=true.
 const cookieOpts = {
   httpOnly: true,
   sameSite: 'lax' as const,
-  secure: false,
+  secure: process.env.COOKIE_SECURE === 'true',
   path: '/',
   maxAge: 7 * 864e5,
 };

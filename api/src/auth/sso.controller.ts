@@ -16,14 +16,14 @@ const STATE_COOKIE = 'codeunical_sso_state';
 const sessionCookieOpts = {
   httpOnly: true,
   sameSite: 'lax' as const,
-  secure: false,
+  secure: process.env.COOKIE_SECURE === 'true',
   path: '/',
   maxAge: 7 * 864e5,
 };
 const stateCookieOpts = {
   httpOnly: true,
   sameSite: 'lax' as const,
-  secure: false,
+  secure: process.env.COOKIE_SECURE === 'true',
   path: '/',
   maxAge: 10 * 60 * 1000,
 };
