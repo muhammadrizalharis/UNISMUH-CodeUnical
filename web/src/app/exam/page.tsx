@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Editor, { type OnMount } from '@monaco-editor/react';
 import { useProctor } from './useProctor';
 import { useCamera } from './useCamera';
@@ -92,6 +93,8 @@ function examStartMs(key: string): number {
 }
 
 export default function ExamPage() {
+  const router = useRouter();
+  const [authed, setAuthed] = useState<boolean | undefined>(undefined);
   const [problem, setProblem] = useState<Problem | null>(null);
   const [code, setCode] = useState('');
   const [saved, setSaved] = useState(true);
@@ -116,6 +119,24 @@ export default function ExamPage() {
   const proctor = useProctor();
   const [camConsent, setCamConsent] = useState(false);
   const camera = useCamera(proctor.attemptId, proctor.active && camConsent);
+
+  // Wajib login untuk mengerjakan ujian.
+  useEffect(() => {
+    fetch(`${API}/auth/me`, { credentials: 'include' })
+      .then((r) => r.json())
+      .then((u) => {
+        if (!u) {
+          router.replace('/welcome');
+          setAuthed(false);
+        } else {
+          setAuthed(true);
+        }
+      })
+      .catch(() => {
+        router.replace('/welcome');
+        setAuthed(false);
+      });
+  }, [router]);
 
   const loadProblem = useCallback((id: string) => {
     fetch(`${API}/problems/${id}`)
@@ -308,6 +329,15 @@ export default function ExamPage() {
           : camera.status === 'error'
             ? { txt: 'error', cls: 'text-rose-400' }
             : { txt: 'off', cls: 'text-slate-500' };
+
+  if (authed === undefined) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-[#0d1117] text-sm text-slate-500">
+        Memeriksa sesi…
+      </div>
+    );
+  }
+  if (!authed) return null; // dialihkan ke /welcome
 
   return (
     <div className="flex h-screen flex-col bg-[#0d1117] text-slate-200">

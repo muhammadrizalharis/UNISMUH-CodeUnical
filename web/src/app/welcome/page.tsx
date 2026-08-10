@@ -87,25 +87,7 @@ export default function Welcome() {
         </button>
 
         <div className="my-4 flex items-center gap-3 text-[11px] text-slate-600">
-          <div className="h-px flex-1 bg-slate-800" /> atau <div className="h-px flex-1 bg-slate-800" />
-        </div>
-
-        {/* Peserta */}
-        <button
-          onClick={() => router.push('/exams')}
-          className="w-full rounded-lg bg-violet-600 px-6 py-3 font-medium text-white transition hover:bg-violet-500"
-        >
-          Lihat Ujian (Peserta) &rarr;
-        </button>
-        <button
-          onClick={() => router.push('/exam')}
-          className="mt-2 w-full text-center text-xs text-slate-500 hover:text-slate-300"
-        >
-          atau latihan bebas (soal acak)
-        </button>
-
-        <div className="my-6 flex items-center gap-3 text-xs text-slate-600">
-          <div className="h-px flex-1 bg-slate-800" /> masuk akun <div className="h-px flex-1 bg-slate-800" />
+          <div className="h-px flex-1 bg-slate-800" /> atau masuk akun <div className="h-px flex-1 bg-slate-800" />
         </div>
 
         {/* Login satu pintu: dosen & mahasiswa */}

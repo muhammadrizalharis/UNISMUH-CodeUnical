@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:47080';
 
@@ -25,22 +26,52 @@ function statusOf(startAt: string, endAt: string, now: number) {
 }
 
 export default function ExamsListPage() {
+  const router = useRouter();
+  const [me, setMe] = useState<{ name: string; code?: string | null } | null | undefined>(undefined);
   const [exams, setExams] = useState<PublicExam[]>([]);
   const [loading, setLoading] = useState(true);
   const [now, setNow] = useState(Date.now());
 
+  // Wajib login untuk melihat/mengerjakan ujian.
   useEffect(() => {
-    fetch(`${API}/public/exams`)
+    fetch(`${API}/auth/me`, { credentials: 'include' })
+      .then((r) => r.json())
+      .then((u) => {
+        if (!u) {
+          router.replace('/welcome');
+          setMe(null);
+        } else {
+          setMe(u);
+        }
+      })
+      .catch(() => {
+        router.replace('/welcome');
+        setMe(null);
+      });
+  }, [router]);
+
+  useEffect(() => {
+    if (!me) return;
+    fetch(`${API}/public/exams`, { credentials: 'include' })
       .then((r) => r.json())
       .then((d: PublicExam[]) => setExams(Array.isArray(d) ? d : []))
       .catch(() => setExams([]))
       .finally(() => setLoading(false));
     const t = setInterval(() => setNow(Date.now()), 30_000);
     return () => clearInterval(t);
-  }, []);
+  }, [me]);
 
   const fmt = (iso: string) =>
     new Date(iso).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
+
+  if (me === undefined) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#0d1117] text-sm text-slate-500">
+        Memeriksa sesi…
+      </main>
+    );
+  }
+  if (!me) return null; // sedang dialihkan ke /welcome
 
   return (
     <main className="min-h-screen bg-[#0d1117] px-4 py-10 text-slate-200">
