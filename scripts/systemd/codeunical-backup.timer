@@ -1,0 +1,9 @@
+[Unit]
+Description=Jadwal harian backup DB CodeUnical
+
+[Timer]
+OnCalendar=*-*-* 02:50:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

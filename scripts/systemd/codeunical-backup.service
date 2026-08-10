@@ -1,0 +1,6 @@
+[Unit]
+Description=CodeUnical nightly DB backup (Postgres lokal codeunical-postgres)
+
+[Service]
+Type=oneshot
+ExecStart=/home/muhammadrizalharis/CodeUnical/scripts/backup-db.sh
