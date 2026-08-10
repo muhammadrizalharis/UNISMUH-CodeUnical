@@ -22,6 +22,13 @@ export class CoursesController {
     return this.courses.list();
   }
 
+  @Get('sync-status')
+  @UseGuards(RolesGuard)
+  @Roles('penguji', 'superadmin')
+  syncStatus() {
+    return this.courses.getSyncStatus();
+  }
+
   @Get(':id')
   detail(@Param('id') id: string) {
     return this.courses.detail(id);
@@ -59,5 +66,12 @@ export class CoursesController {
       },
       req.user?.id ?? null,
     );
+  }
+
+  @Post('sync-now')
+  @UseGuards(RolesGuard)
+  @Roles('penguji', 'superadmin')
+  syncNow() {
+    return this.courses.syncFromSicekcok('manual');
   }
 }

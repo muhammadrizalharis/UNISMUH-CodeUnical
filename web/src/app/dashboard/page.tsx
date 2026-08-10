@@ -157,6 +157,20 @@ export default function Dashboard() {
   const [impProdi, setImpProdi] = useState('');
   const [impBusy, setImpBusy] = useState(false);
   const [impMsg, setImpMsg] = useState('');
+  const [syncStatus, setSyncStatus] = useState<{
+    configured: boolean;
+    enabled: boolean;
+    last: {
+      at: string;
+      ok: boolean;
+      trigger: string;
+      periode?: string;
+      imported?: number;
+      skipped?: number;
+      reason?: string;
+      message?: string;
+    } | null;
+  } | null>(null);
   const [soal, setSoal] = useState<SoalForm | null>(null);
   const [soalMsg, setSoalMsg] = useState('');
   const [soalBusy, setSoalBusy] = useState(false);
@@ -224,6 +238,7 @@ export default function Dashboard() {
 
   const loadCourses = useCallback(() => {
     fetch(`${API}/courses`, opt).then((r) => r.json()).then(setCourses).catch(() => undefined);
+    fetch(`${API}/courses/sync-status`, opt).then((r) => r.json()).then(setSyncStatus).catch(() => undefined);
   }, []);
 
   useEffect(() => {
@@ -744,6 +759,17 @@ export default function Dashboard() {
     }
   };
 
+  const syncNow = async () => {
+    setImpMsg('');
+    setImpBusy(true);
+    try {
+      await fetch(`${API}/courses/sync-now`, { ...opt, method: 'POST' }).catch(() => undefined);
+      loadCourses();
+    } finally {
+      setImpBusy(false);
+    }
+  };
+
   const importSicekcok = async () => {
     setImpMsg('');
     if (!impPeriode.trim()) {
@@ -1069,6 +1095,41 @@ export default function Dashboard() {
                   Tambah
                 </button>
               </form>
+
+              <div className="rounded-lg border border-slate-800 bg-[#0b0e14] p-4">
+                <div className="mb-1 flex items-center justify-between">
+                  <h3 className="font-semibold text-white">Sinkronisasi Otomatis</h3>
+                  <span
+                    className={`rounded px-2 py-0.5 text-[10px] ${
+                      syncStatus?.configured && syncStatus?.enabled
+                        ? 'bg-emerald-950 text-emerald-300'
+                        : 'bg-slate-800 text-slate-400'
+                    }`}
+                  >
+                    {syncStatus?.configured && syncStatus?.enabled ? 'aktif' : 'nonaktif'}
+                  </span>
+                </div>
+                <p className="mb-2 text-xs text-slate-500">
+                  MK ditarik otomatis dari SICEKCOK (saat start &amp; tiap 12 jam). Tak perlu aksi manual.
+                </p>
+                {syncStatus?.last ? (
+                  <p className={`mb-2 text-xs ${syncStatus.last.ok ? 'text-emerald-400' : 'text-amber-400'}`}>
+                    Terakhir {new Date(syncStatus.last.at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' })} ·{' '}
+                    {syncStatus.last.ok
+                      ? `${syncStatus.last.imported} MK baru, ${syncStatus.last.skipped} dilewati (periode ${syncStatus.last.periode})`
+                      : `belum aktif (${syncStatus.last.message || syncStatus.last.reason})`}
+                  </p>
+                ) : (
+                  <p className="mb-2 text-xs text-slate-600">Belum ada sinkronisasi.</p>
+                )}
+                <button
+                  onClick={syncNow}
+                  disabled={impBusy}
+                  className="w-full rounded bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500 disabled:opacity-50"
+                >
+                  {impBusy ? 'Menyinkron…' : 'Sync Sekarang'}
+                </button>
+              </div>
 
               <div className="rounded-lg border border-slate-800 bg-[#0b0e14] p-4">
                 <h3 className="mb-1 font-semibold text-white">Impor Manual (cadangan)</h3>

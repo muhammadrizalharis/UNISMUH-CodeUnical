@@ -1,9 +1,96 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
+export interface SyncStatus {
+  at: string;
+  ok: boolean;
+  trigger: string;
+  periode?: string;
+  imported?: number;
+  skipped?: number;
+  total?: number;
+  reason?: string;
+  message?: string;
+}
+
+type ImportResult =
+  | { ok: true; imported: number; skipped: number; total: number }
+  | { ok: false; reason: string; message?: string };
+
+/** Periode akademik SEVIMA gaya `YYYYS` (S: 1=ganjil Agu–Jan, 2=genap Feb–Jul). */
+function currentPeriode(): string {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth() + 1;
+  if (m >= 8) return `${y}1`; // Agu–Des: ganjil tahun ini
+  if (m === 1) return `${y - 1}1`; // Jan: masih ganjil tahun ajaran lalu
+  return `${y}2`; // Feb–Jul: genap
+}
+
+const SYNC_INTERVAL_MS = 12 * 60 * 60 * 1000; // 12 jam
+
 @Injectable()
-export class CoursesService {
+export class CoursesService implements OnModuleInit, OnModuleDestroy {
+  private readonly log = new Logger('SICEKCOK');
+  private timer: ReturnType<typeof setInterval> | null = null;
+  private lastSync: SyncStatus | null = null;
+
   constructor(private readonly prisma: PrismaService) {}
+
+  private syncConfigured(): boolean {
+    return Boolean(
+      process.env.SICEKCOK_URL &&
+        process.env.SICEKCOK_ACCESS_KEY_ID &&
+        process.env.SICEKCOK_SECRET_KEY,
+    );
+  }
+
+  onModuleInit(): void {
+    const enabled = (process.env.SICEKCOK_SYNC_ENABLED ?? 'true') !== 'false';
+    if (!enabled || !this.syncConfigured()) {
+      this.log.log('Auto-sync MK nonaktif (env belum diisi / dimatikan).');
+      return;
+    }
+    // Sync awal setelah boot (jangan blokir startup) + berkala tiap 12 jam.
+    setTimeout(() => void this.syncFromSicekcok('startup'), 10_000);
+    this.timer = setInterval(() => void this.syncFromSicekcok('scheduled'), SYNC_INTERVAL_MS);
+  }
+
+  onModuleDestroy(): void {
+    if (this.timer) clearInterval(this.timer);
+  }
+
+  getSyncStatus(): { configured: boolean; enabled: boolean; last: SyncStatus | null } {
+    return {
+      configured: this.syncConfigured(),
+      enabled: (process.env.SICEKCOK_SYNC_ENABLED ?? 'true') !== 'false',
+      last: this.lastSync,
+    };
+  }
+
+  /** Sinkronisasi otomatis: ambil MK dari SICEKCOK lalu upsert katalog. Best-effort (aman bila gagal). */
+  async syncFromSicekcok(trigger: string): Promise<SyncStatus> {
+    const periode = process.env.SICEKCOK_SYNC_PERIODE?.trim() || currentPeriode();
+    const kodeProdi = process.env.SICEKCOK_SYNC_KODE_PRODI?.trim() || undefined;
+    const kodeFakultas = process.env.SICEKCOK_SYNC_KODE_FAKULTAS?.trim() || undefined;
+    const res = await this.importFromSicekcok({ periode, kodeProdi, kodeFakultas }, null);
+    const status: SyncStatus = res.ok
+      ? { at: new Date().toISOString(), ok: true, trigger, periode, imported: res.imported, skipped: res.skipped, total: res.total }
+      : { at: new Date().toISOString(), ok: false, trigger, periode, reason: res.reason, message: res.message };
+    this.lastSync = status;
+    if (res.ok) {
+      this.log.log(`Sync (${trigger}) periode ${periode}: ${res.imported} MK baru, ${res.skipped} dilewati.`);
+    } else {
+      this.log.warn(`Sync (${trigger}) gagal: ${res.reason}${res.message ? ' — ' + res.message : ''}.`);
+    }
+    return status;
+  }
 
   list() {
     return this.prisma.course.findMany({
@@ -46,7 +133,7 @@ export class CoursesService {
   async importFromSicekcok(
     input: { periode: string; kodeProdi?: string; kodeFakultas?: string },
     createdById: string | null,
-  ) {
+  ): Promise<ImportResult> {
     const url = process.env.SICEKCOK_URL;
     const akid = process.env.SICEKCOK_ACCESS_KEY_ID;
     const ask = process.env.SICEKCOK_SECRET_KEY;
