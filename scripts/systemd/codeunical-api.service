@@ -1,0 +1,14 @@
+[Unit]
+Description=CodeUnical API (NestJS :47080)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/muhammadrizalharis/CodeUnical/api
+Environment=PATH=/home/muhammadrizalharis/.nvm/versions/node/v22.23.1/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=/home/muhammadrizalharis/.nvm/versions/node/v22.23.1/bin/node dist/main.js
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=default.target
