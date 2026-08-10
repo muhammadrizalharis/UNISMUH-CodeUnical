@@ -43,7 +43,9 @@ export default function Welcome() {
         setErr(d.message || 'Login gagal.');
         return;
       }
-      router.push('/dashboard');
+      const d = await res.json().catch(() => ({}));
+      // Satu pintu login: mahasiswa -> ujian, dosen/admin -> dashboard.
+      router.push(d?.user?.role === 'peserta' ? '/exams' : '/dashboard');
     } catch {
       setErr('Tidak bisa menghubungi server.');
     } finally {
@@ -103,14 +105,14 @@ export default function Welcome() {
         </button>
 
         <div className="my-6 flex items-center gap-3 text-xs text-slate-600">
-          <div className="h-px flex-1 bg-slate-800" /> penguji <div className="h-px flex-1 bg-slate-800" />
+          <div className="h-px flex-1 bg-slate-800" /> masuk akun <div className="h-px flex-1 bg-slate-800" />
         </div>
 
-        {/* Penguji login */}
+        {/* Login satu pintu: dosen & mahasiswa */}
         <form onSubmit={login} className="space-y-3">
           <input
             type="email"
-            placeholder="Email penguji"
+            placeholder="Email (NIM mahasiswa / email dosen)"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="w-full rounded border border-slate-700 bg-[#0b0e14] px-3 py-2 text-sm outline-none focus:border-violet-500"
@@ -128,7 +130,7 @@ export default function Welcome() {
             disabled={loading}
             className="w-full rounded border border-slate-700 px-4 py-2 text-sm transition hover:bg-slate-800 disabled:opacity-40"
           >
-            {loading ? 'masuk…' : 'Login Penguji'}
+            {loading ? 'masuk…' : 'Masuk'}
           </button>
         </form>
 

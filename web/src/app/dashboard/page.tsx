@@ -138,7 +138,7 @@ export default function Dashboard() {
   const [sim, setSim] = useState<{ total: number; pairs: SimPair[] } | null>(null);
   const [replayId, setReplayId] = useState<string | null>(null);
   const [users, setUsers] = useState<UserRow[]>([]);
-  const [pForm, setPForm] = useState({ email: '', name: '', password: '' });
+  const [pForm, setPForm] = useState({ email: '', name: '', password: '', role: 'penguji' });
   const [pMsg, setPMsg] = useState('');
   const [examiners, setExaminers] = useState<string[]>([]);
   const [enrollName, setEnrollName] = useState('');
@@ -247,13 +247,23 @@ export default function Dashboard() {
       body: JSON.stringify(pForm),
     });
     if (res.ok) {
-      setPMsg(`Penguji ${pForm.email} dibuat.`);
-      setPForm({ email: '', name: '', password: '' });
+      setPMsg(`${pForm.role === 'peserta' ? 'Mahasiswa' : 'Penguji'} ${pForm.email} dibuat.`);
+      setPForm({ email: '', name: '', password: '', role: pForm.role });
       loadUsers();
     } else {
       const d = await res.json().catch(() => ({}));
       setPMsg(d.message || 'Gagal.');
     }
+  };
+
+  const setUserStatus = async (id: string, status: string) => {
+    await fetch(`${API}/auth/users/${id}/status`, {
+      ...opt,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    }).catch(() => undefined);
+    loadUsers();
   };
 
   const startEnrollCam = async () => {
@@ -785,7 +795,7 @@ export default function Dashboard() {
     ['courses', 'Mata Kuliah'],
     ['examiners', 'Wajah Penguji'],
   ];
-  if (me.role === 'superadmin') tabs.push(['users', 'Kelola Penguji']);
+  if (me.role === 'superadmin') tabs.push(['users', 'Kelola Akun']);
 
   return (
     <div className="min-h-screen bg-[#0d1117] text-slate-200">
@@ -925,12 +935,24 @@ export default function Dashboard() {
         {tab === 'users' && me.role === 'superadmin' && (
           <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
             <form onSubmit={createPenguji} className="space-y-3 rounded-lg border border-slate-800 p-4">
-              <h3 className="font-semibold text-white">Tambah Penguji</h3>
+              <h3 className="font-semibold text-white">Tambah Akun</h3>
+              <p className="text-xs text-slate-500">
+                Hanya super admin yang boleh membuat akun (tanpa self-register). Untuk mahasiswa, pakai email NIM
+                (mis. <span className="text-slate-400">105841103223@student.unismuh.ac.id</span>) → ID otomatis CU&lt;NIM&gt;.
+              </p>
+              <select
+                value={pForm.role}
+                onChange={(e) => setPForm({ ...pForm, role: e.target.value })}
+                className="w-full rounded border border-slate-700 bg-[#0b0e14] px-3 py-2 text-sm text-slate-100"
+              >
+                <option value="penguji">Penguji (Dosen/Staff)</option>
+                <option value="peserta">Peserta (Mahasiswa)</option>
+              </select>
               <input placeholder="Email" value={pForm.email} onChange={(e) => setPForm({ ...pForm, email: e.target.value })} className="w-full rounded border border-slate-700 bg-[#0b0e14] px-3 py-2 text-sm" />
               <input placeholder="Nama" value={pForm.name} onChange={(e) => setPForm({ ...pForm, name: e.target.value })} className="w-full rounded border border-slate-700 bg-[#0b0e14] px-3 py-2 text-sm" />
               <input placeholder="Sandi (min 8)" value={pForm.password} onChange={(e) => setPForm({ ...pForm, password: e.target.value })} className="w-full rounded border border-slate-700 bg-[#0b0e14] px-3 py-2 text-sm" />
               {pMsg && <p className="text-xs text-emerald-400">{pMsg}</p>}
-              <button type="submit" className="w-full rounded bg-violet-600 px-4 py-2 text-sm text-white hover:bg-violet-500">Buat</button>
+              <button type="submit" className="w-full rounded bg-violet-600 px-4 py-2 text-sm text-white hover:bg-violet-500">Buat Akun</button>
             </form>
             <div className="overflow-hidden rounded-lg border border-slate-800">
               <table className="w-full text-left text-sm">
@@ -941,6 +963,7 @@ export default function Dashboard() {
                     <th className="px-4 py-2">Email</th>
                     <th className="px-4 py-2">Peran</th>
                     <th className="px-4 py-2">Status</th>
+                    <th className="px-4 py-2">Aksi</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -950,7 +973,38 @@ export default function Dashboard() {
                       <td className="px-4 py-2">{u.name}</td>
                       <td className="px-4 py-2 font-mono text-slate-400">{u.email}</td>
                       <td className="px-4 py-2 text-violet-400">{u.role}</td>
-                      <td className="px-4 py-2 text-slate-400">{u.status}</td>
+                      <td className="px-4 py-2">
+                        <span
+                          className={
+                            u.status === 'active'
+                              ? 'text-emerald-400'
+                              : u.status === 'suspended'
+                                ? 'text-rose-400'
+                                : 'text-amber-400'
+                          }
+                        >
+                          {u.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2">
+                        {u.role === 'superadmin' ? (
+                          <span className="text-xs text-slate-600">—</span>
+                        ) : u.status === 'active' ? (
+                          <button
+                            onClick={() => setUserStatus(u.id, 'suspended')}
+                            className="rounded border border-slate-700 px-2 py-1 text-xs text-rose-400 hover:bg-slate-800"
+                          >
+                            Suspend
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => setUserStatus(u.id, 'active')}
+                            className="rounded border border-slate-700 px-2 py-1 text-xs text-emerald-400 hover:bg-slate-800"
+                          >
+                            ACC (Aktifkan)
+                          </button>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
