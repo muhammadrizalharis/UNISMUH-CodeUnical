@@ -1,0 +1,13 @@
+[Unit]
+Description=CodeUnical Proctor-AI (GPU face/phone :47610)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/muhammadrizalharis/CodeUnical/proctor-ai
+ExecStart=/home/muhammadrizalharis/CodeUnical/proctor-ai/run.sh
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target
