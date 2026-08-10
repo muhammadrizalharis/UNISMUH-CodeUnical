@@ -52,8 +52,9 @@ async def detect(file: UploadFile = File(...)):
 
 
 @app.post("/enroll")
-async def enroll(name: str = Form(...), file: UploadFile = File(...)):
-    return {"ok": _detector().enroll(name, _read(file))}
+async def enroll(name: str = Form(...), files: list[UploadFile] = File(...)):
+    imgs = [_read(f) for f in files]
+    return _detector().enroll_multi(name, imgs)
 
 
 @app.delete("/enroll/{name}")

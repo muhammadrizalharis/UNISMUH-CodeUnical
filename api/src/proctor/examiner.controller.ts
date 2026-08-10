@@ -25,11 +25,11 @@ export class ExaminerController {
   }
 
   @Post()
-  enroll(@Body() body: { name?: string; image?: string }) {
-    if (!body?.name || !body?.image) {
-      throw new BadRequestException('name & image wajib.');
+  enroll(@Body() body: { name?: string; images?: string[] }) {
+    if (!body?.name || !Array.isArray(body.images) || body.images.length < 3) {
+      throw new BadRequestException('name & minimal 3 foto (depan/kiri/kanan) wajib.');
     }
-    return this.proctor.enrollExaminer(body.name, body.image);
+    return this.proctor.enrollExaminer(body.name, body.images);
   }
 
   @Delete(':name')

@@ -200,20 +200,29 @@ export class ProctorService {
     }
   }
 
-  /** Daftarkan wajah penguji ke whitelist service GPU. */
-  async enrollExaminer(name: string, dataUrl: string) {
-    const m = /^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/.exec(dataUrl);
-    if (!m) return { ok: false, reason: 'bad_image' };
-    const buf = Buffer.from(m[2], 'base64');
-    if (buf.length > 3_000_000) return { ok: false, reason: 'too_large' };
+  /** Daftarkan wajah penguji ke whitelist service GPU (live multi-sudut: depan/kiri/kanan). */
+  async enrollExaminer(name: string, images: string[]) {
+    const parts: { buf: Buffer; type: string }[] = [];
+    let total = 0;
+    for (const dataUrl of images) {
+      const m = /^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/.exec(dataUrl);
+      if (!m) continue;
+      const buf = Buffer.from(m[2], 'base64');
+      total += buf.length;
+      parts.push({ buf, type: m[1] });
+    }
+    if (parts.length < 3) return { ok: false, reason: 'need_3_angles' };
+    if (total > 12_000_000) return { ok: false, reason: 'too_large' };
     try {
       const fd = new FormData();
       fd.append('name', name.slice(0, 60));
-      fd.append('file', new Blob([buf], { type: m[1] }), 'face.jpg');
+      parts.forEach((p, i) =>
+        fd.append('files', new Blob([new Uint8Array(p.buf)], { type: p.type }), `angle${i}.jpg`),
+      );
       const res = await fetch(`${VISION_URL}/enroll`, {
         method: 'POST',
         body: fd,
-        signal: AbortSignal.timeout(15000),
+        signal: AbortSignal.timeout(20000),
       });
       if (!res.ok) return { ok: false, reason: 'service_error' };
       return (await res.json()) as { ok: boolean };

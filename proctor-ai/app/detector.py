@@ -22,6 +22,9 @@ DEVICE = os.environ.get("DEVICE", "cuda:0")
 PHONE_CONF = float(os.environ.get("PHONE_CONF", "0.35"))
 FACE_DET_PROB = float(os.environ.get("FACE_DET_PROB", "0.90"))
 FACE_MATCH_THRESHOLD = float(os.environ.get("FACE_MATCH_THRESHOLD", "0.55"))
+# Ambang pose (offset horizontal hidung thd garis mata, dinormalkan jarak antar-mata).
+POSE_FRONT_MAX = float(os.environ.get("POSE_FRONT_MAX", "0.15"))
+POSE_SIDE_MIN = float(os.environ.get("POSE_SIDE_MIN", "0.15"))
 COCO_CELL_PHONE = 67
 WHITELIST_PATH = os.environ.get(
     "WHITELIST_PATH", os.path.join(MODELS_DIR, "whitelist.npz")
@@ -48,7 +51,12 @@ class Detector:
         if os.path.exists(WHITELIST_PATH):
             try:
                 data = np.load(WHITELIST_PATH)
-                self.whitelist = {k: data[k] for k in data.files}
+                wl: dict[str, np.ndarray] = {}
+                for k in data.files:
+                    v = np.asarray(data[k], dtype=np.float32)
+                    # Kompat lama: 1 embedding (512,) -> (1, 512).
+                    wl[k] = v.reshape(1, -1) if v.ndim == 1 else v
+                self.whitelist = wl
             except Exception:
                 self.whitelist = {}
 
@@ -123,26 +131,80 @@ class Detector:
     def _match(self, emb: np.ndarray) -> tuple[str | None, float]:
         best, best_s = None, 0.0
         for name, ref in self.whitelist.items():
-            s = float(np.dot(emb, ref))  # cosine (vektor sudah ternormalisasi)
+            R = ref if ref.ndim == 2 else ref.reshape(1, -1)
+            s = float(np.max(R @ emb))  # cosine maksimum lintas sudut tersimpan
             if s > best_s:
                 best, best_s = name, s
         if best is not None and best_s >= FACE_MATCH_THRESHOLD:
             return best, best_s
         return None, best_s
 
-    def enroll(self, name: str, img_bgr: np.ndarray) -> bool:
+    @staticmethod
+    def _pose_offset(lm: np.ndarray) -> float:
+        """Offset horizontal hidung thd titik tengah mata, dinormalkan jarak antar-mata.
+        ~0 = hadap depan; negatif/positif = menoleh ke salah satu sisi."""
+        lm = np.asarray(lm, dtype=np.float32)
+        eye_mid = (lm[0] + lm[1]) / 2.0
+        inter = float(np.linalg.norm(lm[1] - lm[0])) + 1e-6
+        return float((lm[2][0] - eye_mid[0]) / inter)
+
+    def _largest_face(self, img_bgr: np.ndarray):
+        """Wajah terbesar -> (embedding, pose_offset, jumlah_wajah) atau None."""
         img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
-        boxes, probs = self.mtcnn.detect(img_rgb)
+        boxes, probs, lms = self.mtcnn.detect(img_rgb, landmarks=True)
         if boxes is None:
-            return False
-        # Ambil wajah terbesar sebagai referensi.
+            return None
         idx = max(
             range(len(boxes)),
             key=lambda i: (boxes[i][2] - boxes[i][0]) * (boxes[i][3] - boxes[i][1]),
         )
-        kept, embs = self._embed(img_rgb, [boxes[idx]], [probs[idx]])
+        if probs[idx] is None or float(probs[idx]) < FACE_DET_PROB:
+            return None
+        _, embs = self._embed(img_rgb, [boxes[idx]], [probs[idx]])
         if len(embs) == 0:
+            return None
+        return embs[0], self._pose_offset(lms[idx]), len(boxes)
+
+    def enroll(self, name: str, img_bgr: np.ndarray) -> bool:
+        r = self._largest_face(img_bgr)
+        if r is None:
             return False
-        self.whitelist[name] = embs[0]
+        self.whitelist[name] = r[0].reshape(1, -1).astype(np.float32)
         self._save_whitelist()
         return True
+
+    def enroll_multi(self, name: str, images: list[np.ndarray]) -> dict:
+        """Enroll live multi-sudut: wajib ada wajah DEPAN + KIRI + KANAN (foto diam tak bisa),
+        dan tiap frame harus berisi TEPAT 1 wajah (penguji sendiri)."""
+        embs: list[np.ndarray] = []
+        got = {"front": 0, "left": 0, "right": 0}
+        for img in images:
+            r = self._largest_face(img)
+            if r is None:
+                continue
+            emb, off, nfaces = r
+            if nfaces != 1:
+                continue  # harus sendiri saat enroll
+            if abs(off) < POSE_FRONT_MAX:
+                bucket = "front"
+            elif off <= -POSE_SIDE_MIN:
+                bucket = "left"
+            elif off >= POSE_SIDE_MIN:
+                bucket = "right"
+            else:
+                continue  # antara depan & samping -> tak dihitung
+            got[bucket] += 1
+            embs.append(emb)
+        missing = [k for k in ("front", "left", "right") if got[k] == 0]
+        if missing or len(embs) < 3:
+            return {
+                "ok": False,
+                "reason": "pose_incomplete",
+                "missing": missing,
+                "got": got,
+                "count": len(embs),
+            }
+        self.whitelist[name] = np.stack(embs).astype(np.float32)
+        self._save_whitelist()
+        return {"ok": True, "count": len(embs), "got": got}
+
