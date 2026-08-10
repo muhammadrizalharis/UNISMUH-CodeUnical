@@ -69,6 +69,23 @@ export class AuthService implements OnModuleInit {
     return a.length === b.length && timingSafeEqual(a, b);
   }
 
+  /** True bila env SSO lengkap (mirror SsoService.isEnabled tanpa dependency melingkar). */
+  private ssoConfigured(): boolean {
+    return Boolean(
+      process.env.SSO_CLIENT_ID &&
+        process.env.SSO_CLIENT_SECRET &&
+        process.env.SSO_AUTHORIZE_URL &&
+        process.env.SSO_TOKEN_URL &&
+        process.env.SSO_USERINFO_URL &&
+        process.env.SSO_REDIRECT_URI,
+    );
+  }
+
+  /** Mode 1-pintu efektif: flag ON DAN SSO benar-benar terkonfigurasi (biar tak mengunci pra-SSO). */
+  private ssoOnlyActive(): boolean {
+    return process.env.SSO_ONLY_LOGIN === 'true' && this.ssoConfigured();
+  }
+
   async ensureSuperadmin() {
     const email = process.env.SUPERADMIN_EMAIL?.toLowerCase().trim();
     const password = process.env.SUPERADMIN_PASSWORD;
@@ -109,6 +126,10 @@ export class AuthService implements OnModuleInit {
     const user = await this.prisma.user.findUnique({
       where: { email: email.toLowerCase().trim() },
     });
+    // Mode 1-pintu SSO: begitu SSO aktif, login lokal HANYA utk super-admin (jalur darurat).
+    if (this.ssoOnlyActive() && user?.role !== 'superadmin') {
+      throw new UnauthorizedException('Login lokal dinonaktifkan. Silakan masuk lewat SSO UNISMUH.');
+    }
     if (!user) throw new UnauthorizedException(BAD);
     if (user.status === 'suspended') throw new UnauthorizedException('Akun dinonaktifkan.');
     if (user.status === 'pending') throw new UnauthorizedException('Akun menunggu persetujuan super-admin.');

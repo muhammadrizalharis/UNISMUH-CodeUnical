@@ -16,16 +16,23 @@ export default function Welcome() {
   const [password, setPassword] = useState('');
   const [err, setErr] = useState('');
   const [loading, setLoading] = useState(false);
-  const [sso, setSso] = useState<{ enabled: boolean; label: string }>({
+  const [sso, setSso] = useState<{ enabled: boolean; label: string; ssoOnly: boolean }>({
     enabled: false,
     label: 'SSO UNISMUH',
+    ssoOnly: false,
   });
   const [ssoMsg, setSsoMsg] = useState('');
 
   useEffect(() => {
     fetch(`${API}/auth/sso/status`)
       .then((r) => r.json())
-      .then((d) => setSso({ enabled: !!d?.enabled, label: d?.label ?? 'SSO UNISMUH' }))
+      .then((d) =>
+        setSso({
+          enabled: !!d?.enabled,
+          label: d?.label ?? 'SSO UNISMUH',
+          ssoOnly: !!d?.ssoOnly,
+        }),
+      )
       .catch(() => undefined);
     const p = new URLSearchParams(window.location.search).get('sso');
     if (p === 'pending') setSsoMsg('Akun SSO kamu menunggu persetujuan super-admin.');
@@ -57,6 +64,9 @@ export default function Welcome() {
       setLoading(false);
     }
   };
+
+  // SSO-only efektif: form login lokal disembunyikan (super-admin lewat /welcome/[gate]).
+  const ssoOnlyActive = sso.ssoOnly && sso.enabled;
 
   return (
     <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#0d1117] px-6">
@@ -91,6 +101,8 @@ export default function Welcome() {
           )}
         </button>
 
+        {!ssoOnlyActive && (
+          <>
         <div className="my-4 flex items-center gap-3 text-[11px] text-slate-600">
           <div className="h-px flex-1 bg-slate-800" /> atau masuk akun <div className="h-px flex-1 bg-slate-800" />
         </div>
@@ -120,11 +132,15 @@ export default function Welcome() {
             {loading ? 'masuk…' : 'Masuk'}
           </button>
         </form>
+          </>
+        )}
 
         <p className="mt-4 text-center font-mono text-[11px] text-slate-600">
-          {sso.enabled
-            ? 'Dosen → penguji, mahasiswa → peserta (otomatis dari SSO)'
-            : 'SSO UNISMUH aktif otomatis saat admin memasang kredensial'}
+          {ssoOnlyActive
+            ? 'Login hanya lewat SSO UNISMUH · dosen → penguji, mahasiswa → peserta'
+            : sso.enabled
+              ? 'Dosen → penguji, mahasiswa → peserta (otomatis dari SSO)'
+              : 'SSO UNISMUH aktif otomatis saat admin memasang kredensial'}
         </p>
       </div>
     </main>

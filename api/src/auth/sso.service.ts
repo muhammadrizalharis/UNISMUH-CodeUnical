@@ -42,8 +42,13 @@ export class SsoService {
     );
   }
 
-  status(): { enabled: boolean; label: string } {
-    return { enabled: this.isEnabled(), label: this.cfg().label };
+  /** Mode 1-pintu: login lokal dimatikan utk non-superadmin (efektif saat SSO aktif). */
+  ssoOnly(): boolean {
+    return process.env.SSO_ONLY_LOGIN === 'true';
+  }
+
+  status(): { enabled: boolean; label: string; ssoOnly: boolean } {
+    return { enabled: this.isEnabled(), label: this.cfg().label, ssoOnly: this.ssoOnly() };
   }
 
   authorizeUrl(state: string): string {
