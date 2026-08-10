@@ -153,6 +153,10 @@ export default function Dashboard() {
   const [ncName, setNcName] = useState('');
   const [ncSem, setNcSem] = useState('');
   const [courseMsg, setCourseMsg] = useState('');
+  const [impPeriode, setImpPeriode] = useState('');
+  const [impProdi, setImpProdi] = useState('');
+  const [impBusy, setImpBusy] = useState(false);
+  const [impMsg, setImpMsg] = useState('');
   const [soal, setSoal] = useState<SoalForm | null>(null);
   const [soalMsg, setSoalMsg] = useState('');
   const [soalBusy, setSoalBusy] = useState(false);
@@ -730,6 +734,38 @@ export default function Dashboard() {
     }
   };
 
+  const importSicekcok = async () => {
+    setImpMsg('');
+    if (!impPeriode.trim()) {
+      setImpMsg('Periode wajib (mis. 20251).');
+      return;
+    }
+    setImpBusy(true);
+    try {
+      const r = await fetch(`${API}/courses/import-sicekcok`, {
+        ...opt,
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ periode: impPeriode.trim(), kodeProdi: impProdi.trim() || undefined }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (d.ok) {
+        setImpMsg(`Berhasil: ${d.imported} MK diimpor, ${d.skipped} dilewati (total ${d.total}).`);
+        loadCourses();
+      } else if (d.reason === 'not_configured') {
+        setImpMsg('Integrasi SICEKCOK belum dikonfigurasi (isi kredensial di api/.env).');
+      } else if (d.reason === 'unreachable') {
+        setImpMsg('Server SICEKCOK tak bisa dihubungi.');
+      } else if (d.reason === 'api_error') {
+        setImpMsg(`Ditolak API: ${d.message || 'error'}. Minta KAPRODI aktifkan akses "jadwal" untuk key ini.`);
+      } else {
+        setImpMsg(d.message || 'Gagal mengimpor.');
+      }
+    } finally {
+      setImpBusy(false);
+    }
+  };
+
   const logout = async () => {
     await fetch(`${API}/auth/logout`, { ...opt, method: 'POST' }).catch(() => undefined);
     router.replace('/welcome');
@@ -979,6 +1015,33 @@ export default function Dashboard() {
                   Tambah
                 </button>
               </form>
+
+              <div className="rounded-lg border border-slate-800 bg-[#0b0e14] p-4">
+                <h3 className="mb-1 font-semibold text-white">Impor dari SICEKCOK</h3>
+                <p className="mb-3 text-xs text-slate-500">
+                  Tarik daftar mata kuliah dari sistem akademik (query <code className="text-slate-400">jadwal</code>) per periode.
+                </p>
+                <input
+                  value={impPeriode}
+                  onChange={(e) => setImpPeriode(e.target.value)}
+                  placeholder="Periode (mis. 20251)"
+                  className="mb-2 w-full rounded border border-slate-700 bg-[#0d1117] px-3 py-2 text-sm outline-none focus:border-violet-500"
+                />
+                <input
+                  value={impProdi}
+                  onChange={(e) => setImpProdi(e.target.value)}
+                  placeholder="Kode Prodi (opsional)"
+                  className="mb-2 w-full rounded border border-slate-700 bg-[#0d1117] px-3 py-2 text-sm outline-none focus:border-violet-500"
+                />
+                {impMsg && <p className="mb-2 text-sm text-amber-400">{impMsg}</p>}
+                <button
+                  onClick={importSicekcok}
+                  disabled={impBusy}
+                  className="w-full rounded border border-violet-600 px-4 py-2 text-sm font-medium text-violet-300 hover:bg-violet-950/40 disabled:opacity-50"
+                >
+                  {impBusy ? 'Mengimpor…' : 'Impor Mata Kuliah'}
+                </button>
+              </div>
               {openCourse && (
                 <div className="rounded-lg border border-slate-800 bg-[#0b0e14] p-4">
                   <div className="mb-2 flex items-center justify-between">

@@ -42,4 +42,22 @@ export class CoursesController {
       req.user?.id ?? null,
     );
   }
+
+  @Post('import-sicekcok')
+  @UseGuards(RolesGuard)
+  @Roles('penguji', 'superadmin')
+  importSicekcok(
+    @Body() body: { periode?: string; kodeProdi?: string; kodeFakultas?: string },
+    @Req() req: Request & { user?: { id: string } },
+  ) {
+    if (!body?.periode?.trim()) throw new BadRequestException('periode wajib.');
+    return this.courses.importFromSicekcok(
+      {
+        periode: body.periode.trim(),
+        kodeProdi: body.kodeProdi?.trim() || undefined,
+        kodeFakultas: body.kodeFakultas?.trim() || undefined,
+      },
+      req.user?.id ?? null,
+    );
+  }
 }
