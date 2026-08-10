@@ -114,6 +114,7 @@ model Submission {
 model ExamAttempt {
   id         String         @id @default(cuid())
   problemId  String?
+  examId     String?
   status     String         @default("active") // active | kicked | finished
   strikes    Int            @default(0)
   startedAt  DateTime       @default(now())
@@ -122,6 +123,8 @@ model ExamAttempt {
   events     ProctorEvent[]
   keystrokes Keystroke[]
   snapshots  ProctorSnapshot[]
+
+  @@index([examId])
 }
 
 model ProctorEvent {

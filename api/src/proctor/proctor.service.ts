@@ -30,9 +30,9 @@ export class ProctorService {
     private readonly storage: StorageService,
   ) {}
 
-  async createAttempt(problemId?: string) {
+  async createAttempt(problemId?: string, examId?: string) {
     const a = await this.prisma.examAttempt.create({
-      data: { problemId: problemId ?? null },
+      data: { problemId: problemId ?? null, examId: examId ?? null },
     });
     return { attemptId: a.id, startedAt: a.startedAt };
   }

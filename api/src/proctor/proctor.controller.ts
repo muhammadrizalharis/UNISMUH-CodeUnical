@@ -18,8 +18,8 @@ export class ProctorController {
   constructor(private readonly proctor: ProctorService) {}
 
   @Post()
-  create(@Body() body: { problemId?: string }) {
-    return this.proctor.createAttempt(body?.problemId);
+  create(@Body() body: { problemId?: string; examId?: string }) {
+    return this.proctor.createAttempt(body?.problemId, body?.examId);
   }
 
   @Post(':id/events')

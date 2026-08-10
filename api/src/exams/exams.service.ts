@@ -166,4 +166,67 @@ export class ExamsService {
     await this.prisma.exam.delete({ where: { id } }).catch(() => undefined);
     return { ok: true };
   }
+
+  /** Daftar ujian yang sudah TAYANG (published) — untuk peserta. */
+  listPublic() {
+    return this.prisma.exam.findMany({
+      where: { published: true },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        durationMin: true,
+        startAt: true,
+        endAt: true,
+        course: { select: { name: true } },
+        _count: { select: { problems: true } },
+      },
+      orderBy: { startAt: 'asc' },
+    });
+  }
+
+  /** Detail ujian tayang + daftar soal (bentuk publik) untuk peserta. */
+  async publicDetail(id: string) {
+    const exam = await this.prisma.exam.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        durationMin: true,
+        startAt: true,
+        endAt: true,
+        published: true,
+        course: { select: { name: true } },
+        problems: {
+          orderBy: { order: 'asc' },
+          select: {
+            order: true,
+            problem: {
+              select: { id: true, title: true, language: true, difficulty: true },
+            },
+          },
+        },
+      },
+    });
+    if (!exam || !exam.published) {
+      throw new NotFoundException('Ujian tidak tersedia.');
+    }
+    return {
+      id: exam.id,
+      title: exam.title,
+      description: exam.description,
+      durationMin: exam.durationMin,
+      startAt: exam.startAt,
+      endAt: exam.endAt,
+      courseName: exam.course?.name ?? null,
+      problems: exam.problems.map((ep) => ({
+        order: ep.order,
+        id: ep.problem.id,
+        title: ep.problem.title,
+        language: ep.problem.language,
+        difficulty: ep.problem.difficulty,
+      })),
+    };
+  }
 }
