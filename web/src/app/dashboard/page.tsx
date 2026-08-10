@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ReplayModal } from './ReplayModal';
 
@@ -143,6 +143,11 @@ export default function Dashboard() {
   const [examiners, setExaminers] = useState<string[]>([]);
   const [enrollName, setEnrollName] = useState('');
   const [enrollMsg, setEnrollMsg] = useState('');
+  const [enrollShots, setEnrollShots] = useState<{ front?: string; left?: string; right?: string }>({});
+  const [enrollBusy, setEnrollBusy] = useState(false);
+  const [enrollCamOn, setEnrollCamOn] = useState(false);
+  const enrollVideoRef = useRef<HTMLVideoElement | null>(null);
+  const enrollStreamRef = useRef<MediaStream | null>(null);
   const [courses, setCourses] = useState<Course[]>([]);
   const [openCourse, setOpenCourse] = useState<CourseDetail | null>(null);
   const [ncName, setNcName] = useState('');
@@ -247,38 +252,91 @@ export default function Dashboard() {
     }
   };
 
-  const enrollExaminer = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const startEnrollCam = async () => {
     setEnrollMsg('');
-    const form = e.currentTarget as HTMLFormElement;
-    const input = form.elements.namedItem('foto') as HTMLInputElement;
-    const file = input?.files?.[0];
-    if (!enrollName.trim() || !file) {
-      setEnrollMsg('Nama & foto wajib.');
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: 640, height: 480, facingMode: 'user' },
+        audio: false,
+      });
+      enrollStreamRef.current = stream;
+      setEnrollCamOn(true);
+      // video ter-render setelah state -> pasang stream di microtask berikutnya
+      setTimeout(() => {
+        if (enrollVideoRef.current) {
+          enrollVideoRef.current.srcObject = stream;
+          void enrollVideoRef.current.play().catch(() => undefined);
+        }
+      }, 50);
+    } catch {
+      setEnrollMsg('Kamera tidak bisa diakses (izin ditolak?).');
+    }
+  };
+
+  const stopEnrollCam = useCallback(() => {
+    enrollStreamRef.current?.getTracks().forEach((t) => t.stop());
+    enrollStreamRef.current = null;
+    setEnrollCamOn(false);
+  }, []);
+
+  useEffect(() => {
+    if (tab !== 'examiners') stopEnrollCam();
+    return () => stopEnrollCam();
+  }, [tab, stopEnrollCam]);
+
+  const captureShot = (pose: 'front' | 'left' | 'right') => {
+    const v = enrollVideoRef.current;
+    if (!v || v.readyState < 2 || !v.videoWidth) return;
+    const canvas = document.createElement('canvas');
+    canvas.width = 480;
+    canvas.height = Math.round((v.videoHeight / v.videoWidth) * 480) || 360;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
+    setEnrollShots((prev) => ({ ...prev, [pose]: canvas.toDataURL('image/jpeg', 0.75) }));
+  };
+
+  const submitEnroll = async () => {
+    setEnrollMsg('');
+    const { front, left, right } = enrollShots;
+    if (!enrollName.trim()) {
+      setEnrollMsg('Nama penguji wajib.');
       return;
     }
-    const image = await new Promise<string>((resolve) => {
-      const fr = new FileReader();
-      fr.onload = () => resolve(String(fr.result));
-      fr.readAsDataURL(file);
-    });
+    if (!front || !left || !right) {
+      setEnrollMsg('Ambil ketiga sudut dulu: depan, kiri, kanan.');
+      return;
+    }
+    setEnrollBusy(true);
     const r = await fetch(`${API}/examiners`, {
       ...opt,
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: enrollName.trim(), image }),
+      body: JSON.stringify({ name: enrollName.trim(), images: [front, left, right] }),
     });
     const d = await r.json().catch(() => ({}));
+    setEnrollBusy(false);
     if (r.ok && d.ok) {
-      setEnrollMsg(`Wajah "${enrollName}" terdaftar.`);
+      setEnrollMsg(`Wajah "${enrollName}" terdaftar (${d.count ?? 3} sudut).`);
       setEnrollName('');
-      form.reset();
+      setEnrollShots({});
+      stopEnrollCam();
       loadExaminers();
+    } else if (d.reason === 'pose_incomplete') {
+      const map: Record<string, string> = { front: 'depan', left: 'kiri', right: 'kanan' };
+      const miss = (d.missing ?? []).map((k: string) => map[k] ?? k).join(', ');
+      setEnrollMsg(
+        miss
+          ? `Sudut belum terdeteksi: ${miss}. Menoleh lebih jelas & wajah harus sendiri di frame.`
+          : 'Pose belum lengkap — pastikan depan, kiri, dan kanan jelas.',
+      );
     } else {
       setEnrollMsg(
         d.reason === 'service_unavailable'
           ? 'Service GPU tidak aktif.'
-          : 'Wajah tak terdeteksi / gagal daftar.',
+          : d.reason === 'need_3_angles'
+            ? 'Butuh 3 sudut (depan/kiri/kanan).'
+            : 'Gagal mendaftar. Coba ulangi pengambilan.',
       );
     }
   };
@@ -1084,27 +1142,83 @@ export default function Dashboard() {
             <div className="rounded-lg border border-slate-800 bg-[#0b0e14] p-5">
               <h2 className="mb-1 font-semibold text-white">Daftarkan wajah penguji</h2>
               <p className="mb-4 text-xs text-slate-500">
-                Wajah penguji terdaftar TIDAK dianggap &quot;orang asing&quot; saat mengawasi ujian.
-                Butuh service GPU aktif. Disimpan sebagai embedding (bukan foto).
+                Perekaman <b className="text-slate-300">live 3 sudut</b> (depan, kiri, kanan) — bukan unggah foto.
+                Foto diam ditolak karena tak bisa menoleh. Disimpan sebagai embedding (bukan foto). Butuh service GPU.
               </p>
-              <form onSubmit={enrollExaminer} className="space-y-3">
-                <input
-                  value={enrollName}
-                  onChange={(e) => setEnrollName(e.target.value)}
-                  placeholder="Nama penguji"
-                  className="w-full rounded border border-slate-700 bg-[#0d1117] px-3 py-2 text-sm outline-none focus:border-violet-500"
-                />
-                <input
-                  name="foto"
-                  type="file"
-                  accept="image/*"
-                  className="block w-full text-sm text-slate-400 file:mr-3 file:rounded file:border-0 file:bg-violet-600 file:px-3 file:py-1.5 file:text-white"
-                />
-                {enrollMsg && <p className="text-sm text-amber-400">{enrollMsg}</p>}
-                <button type="submit" className="rounded bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500">
-                  Daftarkan
+
+              <input
+                value={enrollName}
+                onChange={(e) => setEnrollName(e.target.value)}
+                placeholder="Nama penguji"
+                className="mb-3 w-full rounded border border-slate-700 bg-[#0d1117] px-3 py-2 text-sm outline-none focus:border-violet-500"
+              />
+
+              {!enrollCamOn ? (
+                <button
+                  onClick={startEnrollCam}
+                  className="rounded bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500"
+                >
+                  📷 Mulai Kamera
                 </button>
-              </form>
+              ) : (
+                <div className="space-y-3">
+                  <div className="overflow-hidden rounded-lg border border-slate-700 bg-black">
+                    <video
+                      ref={enrollVideoRef}
+                      muted
+                      playsInline
+                      className="h-56 w-full -scale-x-100 object-cover"
+                    />
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {([
+                      ['front', 'Depan', 'Hadap lurus ke kamera'],
+                      ['left', 'Kiri', 'Menoleh ke kiri'],
+                      ['right', 'Kanan', 'Menoleh ke kanan'],
+                    ] as const).map(([key, label, hint]) => (
+                      <div key={key} className="rounded border border-slate-800 p-2 text-center">
+                        <div className="mb-1 flex h-20 items-center justify-center overflow-hidden rounded bg-[#0d1117]">
+                          {enrollShots[key] ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={enrollShots[key]} alt={label} className="h-full w-full -scale-x-100 object-cover" />
+                          ) : (
+                            <span className="text-[10px] text-slate-600">belum</span>
+                          )}
+                        </div>
+                        <p className="text-xs font-medium text-slate-200">{label}</p>
+                        <p className="mb-1 text-[10px] text-slate-500">{hint}</p>
+                        <button
+                          onClick={() => captureShot(key)}
+                          className={`w-full rounded px-2 py-1 text-[11px] ${
+                            enrollShots[key]
+                              ? 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                              : 'bg-violet-600 text-white hover:bg-violet-500'
+                          }`}
+                        >
+                          {enrollShots[key] ? 'Ulangi' : 'Ambil'}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  {enrollMsg && <p className="text-sm text-amber-400">{enrollMsg}</p>}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={submitEnroll}
+                      disabled={enrollBusy}
+                      className="rounded bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500 disabled:opacity-50"
+                    >
+                      {enrollBusy ? 'Mendaftar…' : 'Daftarkan'}
+                    </button>
+                    <button
+                      onClick={stopEnrollCam}
+                      className="rounded border border-slate-700 px-4 py-2 text-sm text-slate-300 hover:bg-slate-800"
+                    >
+                      Matikan kamera
+                    </button>
+                  </div>
+                </div>
+              )}
+              {!enrollCamOn && enrollMsg && <p className="mt-2 text-sm text-amber-400">{enrollMsg}</p>}
             </div>
             <div className="rounded-lg border border-slate-800">
               <div className="border-b border-slate-800 px-4 py-2 font-mono text-xs text-slate-500">
