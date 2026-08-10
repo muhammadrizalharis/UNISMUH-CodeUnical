@@ -13,6 +13,7 @@ import {
 } from 'node:crypto';
 import { promisify } from 'node:util';
 import { PrismaService } from '../prisma/prisma.service';
+import { ProdiService } from '../prodi/prodi.service';
 
 const scrypt = promisify(_scrypt);
 const SESSION_DAYS = 7;
@@ -62,7 +63,10 @@ export interface UserRow {
 
 @Injectable()
 export class AuthService implements OnModuleInit {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly prodi: ProdiService,
+  ) {}
 
   async onModuleInit() {
     await this.ensureSuperadmin();
@@ -230,8 +234,9 @@ export class AuthService implements OnModuleInit {
     if (role === 'peserta') {
       const pc = prodiCheck(normEmail);
       if (pc.isNim && !pc.ok) {
+        const nm = pc.prodi ? this.prodi.nameForCode(pc.prodi) : '?';
         throw new BadRequestException(
-          `Prodi "${pc.prodi ?? '?'}" belum didukung. Saat ini khusus Informatika (NIM diawali 10584).`,
+          `Prodi "${pc.prodi ?? '?'}" (${nm}) belum didukung. Saat ini khusus Informatika (NIM diawali 10584).`,
         );
       }
     }

@@ -10,6 +10,7 @@ import { CoursesModule } from './courses/courses.module';
 import { MaterialsModule } from './materials/materials.module';
 import { ExamsModule } from './exams/exams.module';
 import { AiModule } from './ai/ai.module';
+import { ProdiModule } from './prodi/prodi.module';
 import { AuthModule } from './auth/auth.module';
 
 @Module({
@@ -24,6 +25,7 @@ import { AuthModule } from './auth/auth.module';
     MaterialsModule,
     ExamsModule,
     AiModule,
+    ProdiModule,
   ],
   controllers: [AppController],
   providers: [AppService],
