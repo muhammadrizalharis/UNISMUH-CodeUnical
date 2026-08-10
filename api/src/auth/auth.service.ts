@@ -24,6 +24,33 @@ export function deriveUserCode(email: string): string | null {
   return local ? `CU${local}` : null;
 }
 
+/** NIM mahasiswa dari email student.unismuh.ac.id (lokal harus angka). */
+export function parseNim(email: string): string | null {
+  const m = email.toLowerCase().trim().match(/^(\d{6,})@student\.unismuh\.ac\.id$/);
+  return m ? m[1] : null;
+}
+
+/** Kode prodi = fakultas+prodi (2 digit ke-4&5 NIM). Informatika = "84". */
+export function prodiOfNim(nim: string): string | null {
+  return nim.length >= 5 ? nim.slice(3, 5) : null;
+}
+
+/** Prodi yang diizinkan (env ALLOWED_PRODI, default hanya Informatika "84"). */
+export function allowedProdi(): string[] {
+  return (process.env.ALLOWED_PRODI ?? '84')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+/** Bila email adalah NIM mahasiswa, prodinya harus termasuk yang diizinkan. */
+export function prodiCheck(email: string): { isNim: boolean; prodi: string | null; ok: boolean } {
+  const nim = parseNim(email);
+  if (!nim) return { isNim: false, prodi: null, ok: true };
+  const prodi = prodiOfNim(nim);
+  return { isNim: true, prodi, ok: !!prodi && allowedProdi().includes(prodi) };
+}
+
 export interface UserRow {
   id: string;
   code?: string | null;
@@ -154,6 +181,12 @@ export class AuthService implements OnModuleInit {
     mappedRole: 'penguji' | 'peserta' | 'pending';
   }): Promise<{ token: string; user: UserRow } | { pending: true; user: UserRow }> {
     const email = profile.email.toLowerCase().trim();
+    if (profile.mappedRole === 'peserta') {
+      const pc = prodiCheck(email);
+      if (pc.isNim && !pc.ok) {
+        throw new UnauthorizedException('Prodi Anda belum didukung (saat ini khusus Informatika).');
+      }
+    }
     let user =
       (await this.prisma.user.findUnique({ where: { ssoSub: profile.sub } })) ??
       (await this.prisma.user.findUnique({ where: { email } }));
@@ -194,6 +227,14 @@ export class AuthService implements OnModuleInit {
       select: { id: true },
     });
     if (existing) throw new BadRequestException('Email sudah terdaftar.');
+    if (role === 'peserta') {
+      const pc = prodiCheck(normEmail);
+      if (pc.isNim && !pc.ok) {
+        throw new BadRequestException(
+          `Prodi "${pc.prodi ?? '?'}" belum didukung. Saat ini khusus Informatika (NIM diawali 10584).`,
+        );
+      }
+    }
     const created = await this.prisma.user.create({
       data: {
         email: normEmail,
