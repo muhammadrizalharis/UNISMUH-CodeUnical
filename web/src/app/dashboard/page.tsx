@@ -1041,6 +1041,17 @@ export default function Dashboard() {
                               edit
                             </button>
                             <button
+                              onClick={() => {
+                                navigator.clipboard
+                                  ?.writeText(`${window.location.origin}/exam?exam=${ex.id}`)
+                                  .catch(() => undefined);
+                              }}
+                              title="Salin link peserta"
+                              className="shrink-0 rounded bg-slate-800 px-1.5 py-0.5 text-[10px] text-violet-300 hover:bg-slate-700"
+                            >
+                              🔗 link
+                            </button>
+                            <button
                               onClick={() => deleteExam(ex.id, openCourse.id)}
                               className="shrink-0 rounded bg-rose-950 px-1.5 py-0.5 text-[10px] text-rose-300 hover:bg-rose-900"
                             >

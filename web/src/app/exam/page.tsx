@@ -65,12 +65,29 @@ interface RunResult {
   durationMs: number;
 }
 
-function examStartMs(): number {
-  const KEY = 'codeunical:examStart';
-  const saved = localStorage.getItem(KEY);
+interface ExamProblemLite {
+  order: number;
+  id: string;
+  title: string;
+  language: string;
+  difficulty: string;
+}
+interface PublicExamMeta {
+  id: string;
+  title: string;
+  description: string;
+  durationMin: number;
+  startAt: string;
+  endAt: string;
+  courseName: string | null;
+  problems: ExamProblemLite[];
+}
+
+function examStartMs(key: string): number {
+  const saved = localStorage.getItem(key);
   if (saved) return Number(saved);
   const now = Date.now();
-  localStorage.setItem(KEY, String(now));
+  localStorage.setItem(key, String(now));
   return now;
 }
 
@@ -87,13 +104,46 @@ export default function ExamPage() {
   const [htmlSaved, setHtmlSaved] = useState(false);
   const [previewCode, setPreviewCode] = useState('');
   const [secondsLeft, setSecondsLeft] = useState(EXAM_SECONDS);
+  const [examId] = useState<string | null>(() =>
+    typeof window !== 'undefined'
+      ? new URLSearchParams(window.location.search).get('exam')
+      : null,
+  );
+  const [exam, setExam] = useState<PublicExamMeta | null>(null);
+  const [examError, setExamError] = useState(false);
   const startRef = useRef(0);
   const proctor = useProctor();
   const [camConsent, setCamConsent] = useState(false);
   const camera = useCamera(proctor.attemptId, proctor.active && camConsent);
 
+  const loadProblem = useCallback((id: string) => {
+    fetch(`${API}/problems/${id}`)
+      .then((r) => r.json())
+      .then((p: Problem) => {
+        setProblem(p);
+        const draft = localStorage.getItem(`codeunical:draft:${p.id}`);
+        setCode(draft ?? p.starterCode);
+      })
+      .catch(() => undefined);
+  }, []);
+
   useEffect(() => {
-    startRef.current = examStartMs();
+    if (examId) {
+      fetch(`${API}/public/exams/${examId}`)
+        .then((r) => {
+          if (!r.ok) throw new Error('unavailable');
+          return r.json();
+        })
+        .then((e: PublicExamMeta) => {
+          setExam(e);
+          startRef.current = examStartMs(`codeunical:examStart:${e.id}`);
+          const first = e.problems[0]?.id;
+          if (first) loadProblem(first);
+        })
+        .catch(() => setExamError(true));
+      return;
+    }
+    startRef.current = examStartMs('codeunical:examStart');
     const pid = new URLSearchParams(window.location.search).get('p');
     const url = pid ? `${API}/problems/${pid}` : `${API}/problems/random`;
     fetch(url)
@@ -104,18 +154,25 @@ export default function ExamPage() {
         setCode(draft ?? p.starterCode);
       })
       .catch(() => undefined);
-  }, []);
+  }, [examId, loadProblem]);
 
-  // timer persisten (tak reset saat mengulang)
+  // timer persisten (durasi ujian bila mode ujian; dibatasi juga oleh jadwal selesai)
   useEffect(() => {
     const tick = () => {
+      if (!startRef.current) return;
+      const total = exam ? exam.durationMin * 60 : EXAM_SECONDS;
       const elapsed = Math.floor((Date.now() - startRef.current) / 1000);
-      setSecondsLeft(Math.max(0, EXAM_SECONDS - elapsed));
+      let left = total - elapsed;
+      if (exam) {
+        const endLeft = Math.floor((new Date(exam.endAt).getTime() - Date.now()) / 1000);
+        left = Math.min(left, endLeft);
+      }
+      setSecondsLeft(Math.max(0, left));
     };
     tick();
     const t = setInterval(tick, 1000);
     return () => clearInterval(t);
-  }, []);
+  }, [exam]);
 
   useEffect(() => {
     if (!problem) return;
@@ -231,6 +288,9 @@ export default function ExamPage() {
   const isHtml = (problem?.language ?? '') === 'html';
   const timeUp = secondsLeft <= 0;
   const locked = timeUp || !proctor.active || proctor.kicked;
+  const notStarted = !!exam && Date.now() < new Date(exam.startAt).getTime();
+  const closed = !!exam && Date.now() > new Date(exam.endAt).getTime();
+  const booting = !!examId && !exam && !examError;
 
   const camBadge = !camConsent
     ? { txt: 'off', cls: 'text-slate-500' }
@@ -253,6 +313,11 @@ export default function ExamPage() {
       <header className="flex items-center justify-between border-b border-slate-800 px-5 py-3">
         <span className="text-lg font-bold tracking-tight text-white">
           UNISMUH <span className="text-violet-400">CodeUnical</span>
+          {exam && (
+            <span className="ml-2 align-middle text-sm font-normal text-slate-400">
+              · {exam.title}
+            </span>
+          )}
         </span>
         <div className="flex items-center gap-4 text-sm">
           <span className={saved ? 'text-emerald-400' : 'text-amber-400'}>
@@ -295,6 +360,29 @@ export default function ExamPage() {
             <p className="text-slate-500">Memuat soal…</p>
           ) : (
             <>
+              {exam && exam.problems.length > 1 && (
+                <div className="mb-4">
+                  <p className="mb-1 font-mono text-xs text-slate-500">
+                    SOAL ({exam.problems.length})
+                  </p>
+                  <div className="flex flex-wrap gap-1">
+                    {exam.problems.map((ep, i) => (
+                      <button
+                        key={ep.id}
+                        onClick={() => loadProblem(ep.id)}
+                        title={ep.title}
+                        className={`h-8 w-8 rounded font-mono text-xs transition ${
+                          problem.id === ep.id
+                            ? 'bg-violet-600 text-white'
+                            : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                        }`}
+                      >
+                        {i + 1}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div className="mb-2 flex items-center gap-2">
                 <span className="rounded bg-violet-950 px-2 py-0.5 font-mono text-xs text-violet-300">
                   {problem.difficulty}
@@ -460,7 +548,7 @@ export default function ExamPage() {
       )}
 
       {/* Overlay mulai ujian (gesture untuk fullscreen) */}
-      {problem && !proctor.active && !proctor.kicked && (
+      {problem && !proctor.active && !proctor.kicked && !notStarted && !closed && (
         <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-[#0d1117]/95 text-center">
           <h2 className="text-2xl font-bold text-white">Siap mengerjakan?</h2>
           <p className="mt-2 max-w-md text-slate-400">
@@ -481,13 +569,59 @@ export default function ExamPage() {
             </span>
           </label>
           <button
-            onClick={() => proctor.start(problem.id)}
+            onClick={() => proctor.start(problem.id, examId ?? undefined)}
             disabled={!camConsent}
             className="mt-6 rounded-lg bg-violet-600 px-7 py-3 font-medium text-white transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-40"
           >
             Mulai Ujian (Layar Penuh) →
           </button>
           <p className="mt-3 text-xs text-slate-600">Centang persetujuan kamera untuk memulai.</p>
+        </div>
+      )}
+
+      {/* Overlay status ujian: memuat / tidak tersedia / belum mulai / berakhir */}
+      {(booting || examError || notStarted || closed) && !proctor.active && (
+        <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-[#0d1117]/97 px-4 text-center">
+          {booting ? (
+            <p className="text-slate-400">Memuat ujian…</p>
+          ) : examError ? (
+            <>
+              <p className="text-5xl">🚫</p>
+              <h2 className="mt-4 text-2xl font-bold text-rose-400">Ujian tidak tersedia</h2>
+              <p className="mt-2 max-w-md text-slate-400">
+                Tautan tidak valid atau ujian belum ditayangkan.
+              </p>
+              <a href="/exams" className="mt-6 rounded bg-violet-600 px-5 py-2 font-medium text-white hover:bg-violet-500">
+                Lihat ujian tersedia
+              </a>
+            </>
+          ) : notStarted ? (
+            <>
+              <p className="text-5xl">⏳</p>
+              <h2 className="mt-4 text-2xl font-bold text-white">Ujian belum mulai</h2>
+              <p className="mt-2 max-w-md text-slate-400">
+                {exam?.title} dijadwalkan mulai pada{' '}
+                <b className="text-slate-200">
+                  {exam && new Date(exam.startAt).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}
+                </b>
+                .
+              </p>
+              <a href="/exams" className="mt-6 rounded border border-slate-700 px-5 py-2 text-slate-300 hover:bg-slate-800">
+                ← Kembali
+              </a>
+            </>
+          ) : (
+            <>
+              <p className="text-5xl">🔒</p>
+              <h2 className="mt-4 text-2xl font-bold text-rose-400">Ujian sudah berakhir</h2>
+              <p className="mt-2 max-w-md text-slate-400">
+                Waktu pengerjaan {exam?.title} telah lewat.
+              </p>
+              <a href="/exams" className="mt-6 rounded border border-slate-700 px-5 py-2 text-slate-300 hover:bg-slate-800">
+                ← Kembali
+              </a>
+            </>
+          )}
         </div>
       )}
 

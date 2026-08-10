@@ -38,7 +38,7 @@ export function useProctor() {
     }
   }, []);
 
-  const start = useCallback(async (problemId?: string) => {
+  const start = useCallback(async (problemId?: string, examId?: string) => {
     try {
       await document.documentElement.requestFullscreen();
     } catch {
@@ -48,7 +48,7 @@ export function useProctor() {
       const res = await fetch(`${API}/attempts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ problemId }),
+        body: JSON.stringify({ problemId, examId }),
       });
       const d = await res.json();
       attemptRef.current = d.attemptId;
