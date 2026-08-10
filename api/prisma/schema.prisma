@@ -101,6 +101,7 @@ model Submission {
   id        String   @id @default(cuid())
   problemId String
   problem   Problem  @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  userId    String?
   code      String
   language  String   @default("python")
   passed    Int      @default(0)
@@ -109,6 +110,8 @@ model Submission {
   maxScore  Int      @default(0)
   detail    Json?
   createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 model ExamAttempt {

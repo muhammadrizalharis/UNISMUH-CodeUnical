@@ -73,20 +73,42 @@ export class MonitorService {
       .sort((a, b) => b.count - a.count);
   }
 
-  submissions(problemId?: string) {
-    return this.prisma.submission.findMany({
+  async submissions(problemId?: string) {
+    const rows = await this.prisma.submission.findMany({
       where: problemId ? { problemId } : undefined,
       orderBy: { createdAt: 'desc' },
       take: 100,
       select: {
         id: true,
         problemId: true,
+        userId: true,
         passed: true,
         total: true,
         score: true,
         maxScore: true,
         createdAt: true,
       },
+    });
+    const userIds = [...new Set(rows.map((r) => r.userId).filter(Boolean))] as string[];
+    const users = userIds.length
+      ? await this.prisma.user.findMany({
+          where: { id: { in: userIds } },
+          select: { id: true, name: true, code: true },
+        })
+      : [];
+    const uMap = new Map(users.map((u) => [u.id, u]));
+    return rows.map((s) => {
+      const u = s.userId ? uMap.get(s.userId) : undefined;
+      return {
+        id: s.id,
+        problemId: s.problemId,
+        passed: s.passed,
+        total: s.total,
+        score: s.score,
+        maxScore: s.maxScore,
+        createdAt: s.createdAt,
+        peserta: u ? { name: u.name, code: u.code ?? null } : null,
+      };
     });
   }
 }

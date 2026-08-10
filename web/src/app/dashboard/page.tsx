@@ -36,6 +36,7 @@ interface Sub {
   score: number;
   maxScore: number;
   createdAt: string;
+  peserta?: { name: string; code: string | null } | null;
 }
 interface ProblemLite {
   id: string;
@@ -994,6 +995,7 @@ export default function Dashboard() {
             <table className="w-full text-left text-sm">
               <thead className="bg-[#0b0e14] font-mono text-xs text-slate-500">
                 <tr>
+                  <th className="px-4 py-2">Peserta</th>
                   <th className="px-4 py-2">Submission</th>
                   <th className="px-4 py-2">Lolos</th>
                   <th className="px-4 py-2">Skor</th>
@@ -1003,6 +1005,18 @@ export default function Dashboard() {
               <tbody>
                 {subs.map((s) => (
                   <tr key={s.id} className="border-t border-slate-800 font-mono">
+                    <td className="px-4 py-2">
+                      {s.peserta ? (
+                        <span>
+                          <span className="text-slate-200">{s.peserta.name}</span>
+                          {s.peserta.code && (
+                            <span className="ml-1 text-[10px] text-slate-500">{s.peserta.code}</span>
+                          )}
+                        </span>
+                      ) : (
+                        <span className="text-slate-600">Anonim</span>
+                      )}
+                    </td>
                     <td className="px-4 py-2 text-slate-400">{s.id.slice(-6)}</td>
                     <td className={`px-4 py-2 ${s.passed === s.total ? 'text-emerald-400' : 'text-amber-400'}`}>{s.passed}/{s.total}</td>
                     <td className="px-4 py-2 text-slate-300">{s.score}/{s.maxScore}</td>

@@ -75,7 +75,7 @@ export class ProblemsService {
     return { ...p, hiddenCount };
   }
 
-  async submit(id: string, code: string) {
+  async submit(id: string, code: string, userId?: string) {
     const p = await this.prisma.problem.findUnique({
       where: { id },
       include: { testCases: true },
@@ -98,6 +98,7 @@ export class ProblemsService {
     await this.prisma.submission.create({
       data: {
         problemId: id,
+        userId: userId ?? null,
         code,
         language: p.language,
         passed: graded.passed,

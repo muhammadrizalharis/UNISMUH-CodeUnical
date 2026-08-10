@@ -293,6 +293,7 @@ export default function ExamPage() {
     try {
       const res = await fetch(`${API}/problems/${problem.id}/submit`, {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code }),
       });

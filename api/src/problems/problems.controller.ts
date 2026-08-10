@@ -7,16 +7,22 @@ import {
   Param,
   Post,
   Put,
+  Req,
   UseGuards,
 } from '@nestjs/common';
+import type { Request } from 'express';
 import { ProblemsService } from './problems.service';
 import type { ProblemInput } from './problems.service';
+import { AuthService } from '../auth/auth.service';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 
 @Controller('problems')
 export class ProblemsController {
-  constructor(private readonly problems: ProblemsService) {}
+  constructor(
+    private readonly problems: ProblemsService,
+    private readonly auth: AuthService,
+  ) {}
 
   @Get()
   list() {
@@ -78,7 +84,11 @@ export class ProblemsController {
   }
 
   @Post(':id/submit')
-  submit(@Param('id') id: string, @Body() body: { code?: string }) {
+  async submit(
+    @Param('id') id: string,
+    @Body() body: { code?: string },
+    @Req() req: Request & { cookies?: Record<string, string> },
+  ) {
     const code = body?.code ?? '';
     if (typeof code !== 'string' || !code.trim()) {
       throw new BadRequestException('Kode kosong.');
@@ -86,6 +96,8 @@ export class ProblemsController {
     if (code.length > 100_000) {
       throw new BadRequestException('Kode terlalu panjang.');
     }
-    return this.problems.submit(id, code);
+    // Tautkan submission ke peserta bila ada sesi login (best-effort).
+    const user = await this.auth.getSessionUser(req.cookies?.['codeunical_session']);
+    return this.problems.submit(id, code, user?.id ?? undefined);
   }
 }
