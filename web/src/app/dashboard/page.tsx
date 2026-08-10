@@ -49,6 +49,21 @@ interface UserRow {
   status: string;
 }
 
+interface ProdiInfo {
+  synced: boolean;
+  lastSyncAt: string | null;
+  lastError: string | null;
+  allowed: string[];
+  prodi: {
+    code: string;
+    kodeFakultas: string;
+    kodeProdi: string;
+    kodeNim: string | null;
+    name: string;
+    allowed: boolean;
+  }[];
+}
+
 interface Course {
   id: string;
   code: string | null;
@@ -138,6 +153,7 @@ export default function Dashboard() {
   const [sim, setSim] = useState<{ total: number; pairs: SimPair[] } | null>(null);
   const [replayId, setReplayId] = useState<string | null>(null);
   const [users, setUsers] = useState<UserRow[]>([]);
+  const [prodiInfo, setProdiInfo] = useState<ProdiInfo | null>(null);
   const [pForm, setPForm] = useState({ email: '', name: '', password: '', role: 'penguji' });
   const [pMsg, setPMsg] = useState('');
   const [examiners, setExaminers] = useState<string[]>([]);
@@ -224,9 +240,26 @@ export default function Dashboard() {
     fetch(`${API}/auth/users`, opt).then((r) => r.json()).then(setUsers).catch(() => undefined);
   }, []);
 
+  const loadProdi = useCallback(() => {
+    fetch(`${API}/prodi`, opt).then((r) => r.json()).then(setProdiInfo).catch(() => undefined);
+  }, []);
+
+  const toggleProdi = async (code: string, on: boolean) => {
+    const r = await fetch(`${API}/prodi/toggle`, {
+      ...opt,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, on }),
+    });
+    if (r.ok) setProdiInfo(await r.json());
+  };
+
   useEffect(() => {
-    if (me && tab === 'users') loadUsers();
-  }, [me, tab, loadUsers]);
+    if (me && tab === 'users') {
+      loadUsers();
+      loadProdi();
+    }
+  }, [me, tab, loadUsers, loadProdi]);
 
   const loadExaminers = useCallback(() => {
     fetch(`${API}/examiners`, opt).then((r) => r.json()).then(setExaminers).catch(() => undefined);
@@ -960,6 +993,7 @@ export default function Dashboard() {
 
         {tab === 'users' && me.role === 'superadmin' && (
           <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
+            <div className="space-y-6">
             <form onSubmit={createPenguji} className="space-y-3 rounded-lg border border-slate-800 p-4">
               <h3 className="font-semibold text-white">Tambah Akun</h3>
               <p className="text-xs text-slate-500">
@@ -981,6 +1015,44 @@ export default function Dashboard() {
               {pMsg && <p className="text-xs text-emerald-400">{pMsg}</p>}
               <button type="submit" className="w-full rounded bg-violet-600 px-4 py-2 text-sm text-white hover:bg-violet-500">Buat Akun</button>
             </form>
+
+            <div className="rounded-lg border border-slate-800 p-4">
+              <div className="mb-1 flex items-center justify-between">
+                <h3 className="font-semibold text-white">Prodi Diizinkan</h3>
+                <span className={`rounded px-2 py-0.5 text-[10px] ${prodiInfo?.synced ? 'bg-emerald-950 text-emerald-300' : 'bg-slate-800 text-slate-400'}`}>
+                  {prodiInfo?.synced ? 'dari SICEKCOK' : 'label bawaan'}
+                </span>
+              </div>
+              <p className="mb-3 text-xs text-slate-500">Aktifkan prodi yang boleh mendaftar sebagai peserta. Perubahan tersimpan otomatis.</p>
+              <ul className="space-y-1">
+                {(prodiInfo?.prodi ?? []).map((p) => (
+                  <li key={p.code} className="flex items-center justify-between rounded border border-slate-800 px-2 py-1.5 text-sm">
+                    <span className="min-w-0 truncate">
+                      <span className="text-slate-200">{p.name}</span>
+                      <span className="ml-1 font-mono text-[10px] text-slate-500">({p.code})</span>
+                    </span>
+                    <button
+                      onClick={() => toggleProdi(p.code, !p.allowed)}
+                      className={`shrink-0 rounded px-2 py-0.5 text-[11px] ${
+                        p.allowed
+                          ? 'bg-emerald-700 text-white hover:bg-emerald-600'
+                          : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                      }`}
+                    >
+                      {p.allowed ? 'Aktif' : 'Nonaktif'}
+                    </button>
+                  </li>
+                ))}
+                {(prodiInfo?.prodi ?? []).length === 0 && (
+                  <li className="text-xs text-slate-600">Belum ada data prodi.</li>
+                )}
+              </ul>
+              {prodiInfo && !prodiInfo.synced && prodiInfo.lastError && (
+                <p className="mt-2 text-[10px] text-slate-600">SICEKCOK: {prodiInfo.lastError} — pakai label bawaan sampai key aktif.</p>
+              )}
+            </div>
+            </div>
+
             <div className="overflow-hidden rounded-lg border border-slate-800">
               <table className="w-full text-left text-sm">
                 <thead className="bg-[#0b0e14] font-mono text-xs text-slate-500">

@@ -4,6 +4,18 @@ import {
   OnModuleDestroy,
   OnModuleInit,
 } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+
+/** NIM mahasiswa dari email student.unismuh.ac.id (lokal harus angka). */
+export function parseNim(email: string): string | null {
+  const m = email.toLowerCase().trim().match(/^(\d{6,})@student\.unismuh\.ac\.id$/);
+  return m ? m[1] : null;
+}
+
+/** Kode prodi = fakultas+prodi (2 digit ke-4&5 NIM). Informatika = "84". */
+export function prodiOfNim(nim: string): string | null {
+  return nim.length >= 5 ? nim.slice(3, 5) : null;
+}
 
 export interface ProdiRef {
   kodeFakultas: string;
@@ -32,6 +44,9 @@ export class ProdiService implements OnModuleInit, OnModuleDestroy {
   private cache: ProdiRef[] = [];
   private lastSyncAt: string | null = null;
   private lastError: string | null = null;
+  private allowed: string[] = []; // daftar kode prodi diizinkan (DB-backed)
+
+  constructor(private readonly prisma: PrismaService) {}
 
   private configured(): boolean {
     return Boolean(
@@ -41,7 +56,8 @@ export class ProdiService implements OnModuleInit, OnModuleDestroy {
     );
   }
 
-  onModuleInit(): void {
+  async onModuleInit(): Promise<void> {
+    await this.loadAllowed();
     const enabled = (process.env.SICEKCOK_SYNC_ENABLED ?? 'true') !== 'false';
     if (!enabled || !this.configured()) return;
     setTimeout(() => void this.sync(), 12_000);
@@ -52,11 +68,57 @@ export class ProdiService implements OnModuleInit, OnModuleDestroy {
     if (this.timer) clearInterval(this.timer);
   }
 
-  allowedCodes(): string[] {
-    return (process.env.ALLOWED_PRODI ?? '84')
+  /** Muat daftar prodi diizinkan dari DB; seed dari env ALLOWED_PRODI bila belum ada. */
+  private async loadAllowed(): Promise<void> {
+    const envDefault = (process.env.ALLOWED_PRODI ?? '84')
       .split(',')
       .map((s) => s.trim())
       .filter(Boolean);
+    try {
+      const row = await this.prisma.appSetting.findUnique({ where: { key: 'allowed_prodi' } });
+      if (row) {
+        this.allowed = row.value.split(',').map((s) => s.trim()).filter(Boolean);
+        return;
+      }
+      this.allowed = envDefault;
+      await this.prisma.appSetting
+        .create({ data: { key: 'allowed_prodi', value: envDefault.join(',') } })
+        .catch(() => undefined);
+    } catch {
+      this.allowed = envDefault;
+    }
+  }
+
+  allowedCodes(): string[] {
+    return this.allowed;
+  }
+
+  /** Ganti seluruh daftar prodi diizinkan (super admin). Persist ke DB. */
+  async setAllowed(codes: string[]): Promise<string[]> {
+    const clean = [...new Set(codes.map((c) => c.trim()).filter(Boolean))];
+    this.allowed = clean;
+    await this.prisma.appSetting.upsert({
+      where: { key: 'allowed_prodi' },
+      create: { key: 'allowed_prodi', value: clean.join(',') },
+      update: { value: clean.join(',') },
+    });
+    return this.allowed;
+  }
+
+  /** Aktif/nonaktifkan satu kode prodi. */
+  async toggle(code: string, on: boolean): Promise<string[]> {
+    const set = new Set(this.allowed);
+    if (on) set.add(code.trim());
+    else set.delete(code.trim());
+    return this.setAllowed([...set]);
+  }
+
+  /** Bila email adalah NIM mahasiswa, prodinya harus termasuk yang diizinkan. */
+  checkEmail(email: string): { isNim: boolean; prodi: string | null; ok: boolean } {
+    const nim = parseNim(email);
+    if (!nim) return { isNim: false, prodi: null, ok: true };
+    const prodi = prodiOfNim(nim);
+    return { isNim: true, prodi, ok: !!prodi && this.allowed.includes(prodi) };
   }
 
   private code(p: { kodeFakultas: string; kodeProdi: string }): string {
