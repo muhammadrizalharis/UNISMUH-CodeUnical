@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "UNISMUH CodeUnical",
   description: "Platform ujian koding anti-nyontek — UNISMUH Informatika",
-  icons: { icon: "/LOGO-CODE-UNICAL.png" },
+  icons: { icon: "/logo-emblem.png" },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

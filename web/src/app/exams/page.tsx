@@ -84,7 +84,7 @@ export default function ExamsListPage() {
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/LOGO-CODE-UNICAL.png" alt="" className="h-11 w-11 rounded-lg" />
+            <img src="/logo-emblem.png" alt="" className="h-12 w-12" />
             <div>
               <h1 className="text-2xl font-bold text-white">Ujian Tersedia</h1>
               <p className="text-sm text-slate-500">UNISMUH CodeUnical — pilih ujian untuk dikerjakan.</p>

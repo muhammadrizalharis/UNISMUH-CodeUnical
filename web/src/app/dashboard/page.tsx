@@ -874,7 +874,7 @@ export default function Dashboard() {
         <div>
           <h1 className="flex items-center gap-2 text-xl font-bold text-white">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/LOGO-CODE-UNICAL.png" alt="" className="h-9 w-9 rounded-lg" />
+            <img src="/logo-emblem.png" alt="" className="h-10 w-10" />
             <span>UNISMUH <span className="text-violet-400">CodeUnical</span> · Dashboard</span>
           </h1>
           <p className="font-mono text-xs text-slate-500">

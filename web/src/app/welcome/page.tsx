@@ -77,9 +77,9 @@ export default function Welcome() {
         <div className="mb-6 flex flex-col items-center text-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/LOGO-CODE-UNICAL.png"
+            src="/logo-emblem.png"
             alt="UNISMUH CodeUnical"
-            className="mb-3 h-28 w-28 rounded-2xl shadow-lg shadow-violet-900/30"
+            className="mb-2 h-36 w-36"
           />
           <p className="font-mono text-xs text-slate-500">UNISMUH · Ujian Koding</p>
         </div>
