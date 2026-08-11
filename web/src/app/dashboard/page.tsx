@@ -872,8 +872,10 @@ export default function Dashboard() {
     <div className="min-h-screen bg-[#0d1117] text-slate-200">
       <header className="flex items-center justify-between border-b border-slate-800 px-6 py-4">
         <div>
-          <h1 className="text-xl font-bold text-white">
-            UNISMUH <span className="text-violet-400">CodeUnical</span> · Dashboard
+          <h1 className="flex items-center gap-2 text-xl font-bold text-white">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/LOGO-CODE-UNICAL.png" alt="" className="h-9 w-9 rounded-lg" />
+            <span>UNISMUH <span className="text-violet-400">CodeUnical</span> · Dashboard</span>
           </h1>
           <p className="font-mono text-xs text-slate-500">
             {me.code && <span className="text-slate-300">{me.code}</span>} {me.code && '· '}{me.name} · <span className="text-violet-400">{me.role}</span>

@@ -74,11 +74,14 @@ export default function Welcome() {
       <div className="cu-orb cu-float text-violet-500" aria-hidden style={{ width: 320, height: 320, top: '-6rem', left: '-4rem' }} />
 
       <div className="cu-fade-up relative w-full max-w-sm">
-        <div className="mb-6 text-center">
-          <h1 className="text-3xl font-extrabold tracking-tight">
-            <span className="cu-gradient">CodeUnical</span>
-          </h1>
-          <p className="mt-1 font-mono text-xs text-slate-500">UNISMUH · Ujian Koding</p>
+        <div className="mb-6 flex flex-col items-center text-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/LOGO-CODE-UNICAL.png"
+            alt="UNISMUH CodeUnical"
+            className="mb-3 h-28 w-28 rounded-2xl shadow-lg shadow-violet-900/30"
+          />
+          <p className="font-mono text-xs text-slate-500">UNISMUH · Ujian Koding</p>
         </div>
 
         {/* SSO UNISMUH (aktif otomatis saat env SSO_* terisi) */}

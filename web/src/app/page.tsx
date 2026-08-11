@@ -16,6 +16,12 @@ export default function Home() {
       />
 
       <div className="cu-fade-up relative">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/LOGO-CODE-UNICAL.png"
+          alt="UNISMUH CodeUnical"
+          className="mx-auto mb-6 h-32 w-32 rounded-3xl shadow-xl shadow-violet-900/30"
+        />
         <p className="mb-4 font-mono text-xs tracking-[0.3em] text-slate-500">
           UNISMUH · INFORMATIKA
         </p>

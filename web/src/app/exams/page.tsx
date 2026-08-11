@@ -82,9 +82,13 @@ export default function ExamsListPage() {
     <main className="min-h-screen bg-[#0d1117] px-4 py-10 text-slate-200">
       <div className="mx-auto max-w-3xl">
         <div className="mb-6 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-white">Ujian Tersedia</h1>
-            <p className="text-sm text-slate-500">UNISMUH CodeUnical — pilih ujian untuk dikerjakan.</p>
+          <div className="flex items-center gap-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/LOGO-CODE-UNICAL.png" alt="" className="h-11 w-11 rounded-lg" />
+            <div>
+              <h1 className="text-2xl font-bold text-white">Ujian Tersedia</h1>
+              <p className="text-sm text-slate-500">UNISMUH CodeUnical — pilih ujian untuk dikerjakan.</p>
+            </div>
           </div>
           <Link href="/welcome" className="text-sm text-slate-400 hover:text-slate-200">
             ← Beranda

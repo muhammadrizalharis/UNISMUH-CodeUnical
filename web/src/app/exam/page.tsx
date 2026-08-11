@@ -350,6 +350,8 @@ export default function ExamPage() {
     <div className="flex h-screen flex-col bg-[#0d1117] text-slate-200">
       <header className="flex items-center justify-between border-b border-slate-800 px-5 py-3">
         <span className="text-lg font-bold tracking-tight text-white">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/LOGO-CODE-UNICAL.png" alt="" className="mr-2 inline-block h-7 w-7 rounded-md align-middle" />
           UNISMUH <span className="text-violet-400">CodeUnical</span>
           {exam && (
             <span className="ml-2 align-middle text-sm font-normal text-slate-400">
