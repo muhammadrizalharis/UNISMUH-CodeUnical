@@ -3,12 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-// Alamat API: ikut host halaman (LAN 10.33.33.11 / localhost) bila env kosong.
-const API =
-  process.env.NEXT_PUBLIC_API_URL ||
-  (typeof window !== 'undefined'
-    ? `${window.location.protocol}//${window.location.hostname}:47080`
-    : 'http://localhost:47080');
+// Alamat API same-origin: /api diproksi Next ke backend (tanpa isu lintas-origin/cookie).
+const API = process.env.NEXT_PUBLIC_API_URL || '/api';
 
 export default function Welcome() {
   const router = useRouter();
