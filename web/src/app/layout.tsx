@@ -29,9 +29,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script
           dangerouslySetInnerHTML={{
             __html:
-              // Mode lite HANYA utk perangkat sangat lemah (<=2 inti) atau reduce-motion.
-              // Animasi = transform/opacity murni -> laptop biasa (4-8 inti) tetap mulus.
-              "(function(){try{var c=navigator.hardwareConcurrency||8,r=matchMedia('(prefers-reduced-motion: reduce)').matches;if(r||c<=2){document.documentElement.classList.add('lite');}}catch(e){}})();",
+              // Mode lite HANYA utk perangkat sangat lemah (<=2 inti). Reduce-motion SENGAJA
+              // TIDAK mematikan animasi (permintaan produk; animasi = transform/opacity ringan).
+              "(function(){try{var c=navigator.hardwareConcurrency||8;if(c<=2){document.documentElement.classList.add('lite');}}catch(e){}})();",
           }}
         />
       </head>

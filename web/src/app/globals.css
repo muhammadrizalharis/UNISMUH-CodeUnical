@@ -271,11 +271,5 @@ html.lite .cu-ring {
   display: none;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation: none !important;
-    transition: none !important;
-  }
-}
+/* Catatan: animasi SENGAJA tetap tampil walau prefers-reduced-motion (permintaan
+   produk, selaras dg ComputeHub/axon/calyzr). Hanya mode lite (<=2 inti) yg statis. */
