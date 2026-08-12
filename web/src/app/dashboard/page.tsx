@@ -144,7 +144,7 @@ const SOAL_LANGS = [
   'html',
 ];
 
-type Tab = 'monitor' | 'subs' | 'sim' | 'users' | 'examiners' | 'courses';
+type Tab = 'monitor' | 'arsip' | 'subs' | 'sim' | 'users' | 'examiners' | 'courses';
 
 export default function Dashboard() {
   const router = useRouter();
@@ -853,10 +853,15 @@ export default function Dashboard() {
   }
   if (!me) return null;
 
-  const liveCount = attempts.filter((a) => a.live && a.status === 'active').length;
+  // Monitoring Live HANYA yang sedang ujian; sisanya (kicked/selesai/terputus) masuk Arsip.
+  const liveAttempts = attempts.filter((a) => a.live && a.status === 'active');
+  const archivedAttempts = attempts.filter((a) => !(a.live && a.status === 'active'));
+  const liveCount = liveAttempts.length;
+  const monitorRows = tab === 'arsip' ? archivedAttempts : liveAttempts;
   const simColor = (v: number) => (v >= 90 ? 'text-rose-400' : v >= 75 ? 'text-amber-400' : 'text-slate-300');
   const tabs: [Tab, string][] = [
     ['monitor', 'Monitoring Live'],
+    ['arsip', 'Arsip Attempt'],
     ['subs', 'Submission & Nilai'],
     ['sim', 'Kemiripan Kode'],
     ['courses', 'Mata Kuliah'],
@@ -905,7 +910,7 @@ export default function Dashboard() {
       </nav>
 
       <main className="p-6">
-        {tab === 'monitor' && (
+        {(tab === 'monitor' || tab === 'arsip') && (
           <div className="space-y-3">
             <div className="flex flex-wrap items-center gap-2 text-sm">
               <label className="text-slate-500">Filter ujian:</label>
@@ -945,12 +950,14 @@ export default function Dashboard() {
                 </tr>
               </thead>
               <tbody>
-                {attempts.length === 0 && (
+                {monitorRows.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="px-4 py-6 text-center text-slate-600">Belum ada peserta.</td>
+                    <td colSpan={8} className="px-4 py-6 text-center text-slate-600">
+                      {tab === 'arsip' ? 'Belum ada arsip attempt.' : 'Belum ada peserta yang sedang ujian.'}
+                    </td>
                   </tr>
                 )}
-                {attempts.map((a) => (
+                {monitorRows.map((a) => (
                   <tr key={a.id} className="border-t border-slate-800 font-mono">
                     <td className="px-4 py-2">
                       {a.peserta ? (
