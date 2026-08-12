@@ -116,30 +116,48 @@ export class ProblemsService {
   async similarity(problemId: string) {
     const subs = await this.prisma.submission.findMany({
       where: { problemId },
-      select: { id: true, createdAt: true, code: true, score: true },
+      select: { id: true, createdAt: true, code: true, score: true, userId: true },
       orderBy: { createdAt: 'asc' },
     });
-    const fps = subs.map((s) => ({
-      id: s.id,
-      createdAt: s.createdAt,
-      score: s.score,
-      fp: codeFingerprint(s.code),
-    }));
-    const pairs: { a: string; b: string; similarity: number }[] = [];
+    // userId disimpan tanpa relasi -> ambil identitas peserta batch; ujian dari ExamProblem.
+    const userIds = [...new Set(subs.map((s) => s.userId).filter(Boolean))] as string[];
+    const [users, exProblems] = await Promise.all([
+      userIds.length
+        ? this.prisma.user.findMany({
+            where: { id: { in: userIds } },
+            select: { id: true, name: true, code: true },
+          })
+        : Promise.resolve([] as { id: string; name: string; code: string | null }[]),
+      this.prisma.examProblem.findMany({
+        where: { problemId },
+        select: { exam: { select: { title: true } } },
+      }),
+    ]);
+    const uMap = new Map(users.map((u) => [u.id, u]));
+    const exam =
+      [...new Set(exProblems.map((e) => e.exam?.title).filter(Boolean))].join(', ') || null;
+    const who = (s: { id: string; userId: string | null }) => {
+      const u = s.userId ? uMap.get(s.userId) : undefined;
+      return u
+        ? { name: u.name, code: u.code ?? null }
+        : { name: null, code: null, sub: s.id.slice(-6) };
+    };
+    const fps = subs.map((s) => ({ id: s.id, userId: s.userId, fp: codeFingerprint(s.code) }));
+    const pairs: {
+      a: { name: string | null; code: string | null; sub?: string };
+      b: { name: string | null; code: string | null; sub?: string };
+      similarity: number;
+    }[] = [];
     for (let i = 0; i < fps.length; i++) {
       for (let j = i + 1; j < fps.length; j++) {
         const sim = simScore(fps[i].fp, fps[j].fp);
         if (sim >= 0.6) {
-          pairs.push({
-            a: fps[i].id,
-            b: fps[j].id,
-            similarity: Math.round(sim * 100),
-          });
+          pairs.push({ a: who(fps[i]), b: who(fps[j]), similarity: Math.round(sim * 100) });
         }
       }
     }
     pairs.sort((x, y) => y.similarity - x.similarity);
-    return { total: subs.length, pairs: pairs.slice(0, 100) };
+    return { total: subs.length, exam, pairs: pairs.slice(0, 100) };
   }
 
   async authoringDetail(id: string) {

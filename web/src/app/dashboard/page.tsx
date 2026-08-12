@@ -41,9 +41,14 @@ interface ProblemLite {
   title: string;
   difficulty: string;
 }
+interface SimPerson {
+  name: string | null;
+  code: string | null;
+  sub?: string;
+}
 interface SimPair {
-  a: string;
-  b: string;
+  a: SimPerson;
+  b: SimPerson;
   similarity: number;
 }
 interface UserRow {
@@ -188,6 +193,17 @@ function Clock() {
   );
 }
 
+// Label peserta di daftar kemiripan (nama + kode, atau Anonim + potongan id submission).
+function SimName({ p }: { p: SimPerson }) {
+  if (!p.name) return <span className="text-slate-500">Anonim #{p.sub}</span>;
+  return (
+    <span className="text-slate-200">
+      {p.name}
+      {p.code && <span className="ml-1 text-[11px] text-slate-500">{p.code}</span>}
+    </span>
+  );
+}
+
 export default function Dashboard() {
   const router = useRouter();
   const [me, setMe] = useState<Me | null | undefined>(undefined);
@@ -198,7 +214,9 @@ export default function Dashboard() {
   const [subs, setSubs] = useState<Sub[]>([]);
   const [problems, setProblems] = useState<ProblemLite[]>([]);
   const [simProblem, setSimProblem] = useState('');
-  const [sim, setSim] = useState<{ total: number; pairs: SimPair[] } | null>(null);
+  const [sim, setSim] = useState<{ total: number; exam: string | null; pairs: SimPair[] } | null>(
+    null,
+  );
   const [replayId, setReplayId] = useState<string | null>(null);
   const [users, setUsers] = useState<UserRow[]>([]);
   const [prodiInfo, setProdiInfo] = useState<ProdiInfo | null>(null);
@@ -1115,15 +1133,25 @@ export default function Dashboard() {
             </select>
             {sim && (
               <div className="rounded-lg border border-slate-800 p-4">
-                <p className="mb-3 text-sm text-slate-400">{sim.total} submission · {sim.pairs.length} pasangan mirip (≥60%)</p>
+                <p className="mb-3 text-sm text-slate-400">
+                  {sim.total} submission
+                  {sim.exam && (
+                    <>
+                      {' '}· ujian: <span className="text-slate-200">{sim.exam}</span>
+                    </>
+                  )}{' '}
+                  · {sim.pairs.length} pasangan mirip (≥60%)
+                </p>
                 {sim.pairs.length === 0 ? (
                   <p className="text-slate-600">Tak ada kemiripan mencurigakan.</p>
                 ) : (
-                  <div className="space-y-1 font-mono text-sm">
+                  <div className="space-y-1.5 font-mono text-sm">
                     {sim.pairs.map((p, i) => (
-                      <div key={i} className="flex items-center gap-3">
-                        <span className={`w-12 font-bold ${simColor(p.similarity)}`}>{p.similarity}%</span>
-                        <span className="text-slate-400">{p.a.slice(-6)} ↔ {p.b.slice(-6)}</span>
+                      <div key={i} className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                        <span className={`w-12 shrink-0 font-bold ${simColor(p.similarity)}`}>{p.similarity}%</span>
+                        <span className="flex items-center gap-2">
+                          <SimName p={p.a} /> <span className="text-slate-600">↔</span> <SimName p={p.b} />
+                        </span>
                         {p.similarity >= 90 && <span className="text-rose-500">⚠ nyaris identik</span>}
                       </div>
                     ))}
