@@ -9,11 +9,13 @@ const BOOT = [
   { k: 'anti-paste & pindah-tab', v: 'aktif' },
 ];
 
-// ASCII "CU" (backslash digandakan agar tak dimakan template literal).
-const LOGO = `  ___ _   _ 
- / __| | | |
-| (__| |_| |
- \\___|\\___/ `;
+// ASCII "Code Unical" (figlet font small). Baris terpisah agar escaping backslash/kutip aman.
+const LOGO = [
+  "  ___         _       _   _      _         _",
+  " / __|___  __| |___  | | | |_ _ (_)__ __ _| |",
+  "| (__/ _ \\/ _` / -_) | |_| | ' \\| / _/ _` | |",
+  " \\___\\___/\\__,_\\___|  \\___/|_||_|_\\__\\__,_|_|",
+].join('\n');
 
 export default function Home() {
   return (
@@ -53,8 +55,7 @@ export default function Home() {
           </pre>
 
           <p className="term-line" style={{ animationDelay: '1.35s' }}>
-            <span className="term-key">UNISMUH CodeUnical</span>{' '}
-            <span className="term-muted">v1.0</span>
+            <span className="term-muted">v1.0 · rilis stabil</span>
           </p>
           <p className="term-line term-muted" style={{ animationDelay: '1.5s' }}>
             # ujian coding anti-nyontek · Fakultas Teknik UNISMUH Makassar

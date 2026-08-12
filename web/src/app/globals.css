@@ -408,10 +408,12 @@ body {
 
 .term-logo {
   color: #34d399;
-  font-size: 12px;
+  font-size: clamp(7.5px, 2.3vw, 12px);
   line-height: 1.15;
   text-shadow: 0 0 12px rgba(52, 211, 153, 0.45);
   margin: 2px 0 10px;
+  overflow-x: auto;
+  max-width: 100%;
 }
 
 .term-check {
