@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ReplayModal } from './ReplayModal';
 
@@ -147,6 +147,46 @@ const SOAL_LANGS = [
 ];
 
 type Tab = 'monitor' | 'arsip' | 'subs' | 'sim' | 'users' | 'examiners' | 'courses';
+
+// Ikon garis (Feather/Lucide) per tab — currentColor mengikuti warna teks tab.
+const TAB_ICON: Record<Tab, ReactNode> = {
+  monitor: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12h4l2 6 3-15 3 12 2-5h4" /></svg>
+  ),
+  arsip: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="4" rx="1" /><path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8" /><path d="M10 12h4" /></svg>
+  ),
+  subs: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 20h18" /><path d="M6 20v-7" /><path d="M12 20V5" /><path d="M18 20v-10" /></svg>
+  ),
+  sim: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="12" r="6" /><circle cx="15" cy="12" r="6" /></svg>
+  ),
+  courses: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></svg>
+  ),
+  examiners: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" /></svg>
+  ),
+  users: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
+  ),
+};
+
+// Jam berjalan — komponen terisolasi agar render per-detik tak memicu render seluruh dashboard.
+function Clock() {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(t);
+  }, []);
+  return (
+    <>
+      <span>{now.toLocaleDateString('id-ID', { weekday: 'short', day: '2-digit', month: 'short', year: '2-digit' })}</span>
+      <b>{now.toLocaleTimeString('id-ID')}</b>
+    </>
+  );
+}
 
 export default function Dashboard() {
   const router = useRouter();
@@ -873,40 +913,62 @@ export default function Dashboard() {
 
   return (
     <div className="term term-dash min-h-screen bg-[#0a0f0d] text-slate-200">
-      <header className="flex items-center justify-between border-b border-emerald-500/15 px-6 py-4">
-        <div>
-          <h1 className="flex items-center gap-2 text-lg font-semibold text-white">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo-emblem.png" alt="" className="h-9 w-9" />
-            <span className="text-emerald-400">~/dashboard</span>
-            <span className="text-slate-600">—</span>
-            <span>UNISMUH CodeUnical</span>
-          </h1>
-          <p className="font-mono text-xs text-slate-500">
-            {me.code && <span className="text-slate-300">{me.code}</span>} {me.code && '· '}{me.name} · <span className="text-violet-400">{me.role}</span>
-          </p>
-        </div>
-        <div className="flex items-center gap-4 text-sm">
-          <span className="flex items-center gap-2 font-mono">
-            <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" />
-            {liveCount} aktif
+      <header className="dash-header">
+        <div className="dash-winbar">
+          <span className="term-dot" style={{ background: '#ff5f56' }} />
+          <span className="term-dot" style={{ background: '#ffbd2e' }} />
+          <span className="term-dot" style={{ background: '#27c93f' }} />
+          <span className="dash-winpath">
+            dashboard@codeunical: <span className="text-emerald-400/80">~/{tab}</span>
           </span>
-          <button onClick={logout} className="rounded border border-emerald-500/30 px-3 py-1.5 text-xs text-emerald-300 transition hover:bg-emerald-500/10">
-            $ logout
-          </button>
+          <span className="dash-clock">
+            <Clock />
+          </span>
+        </div>
+
+        <div className="dash-idrow">
+          <div className="flex items-center gap-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo-emblem.png" alt="" className="dash-logo" />
+            <div>
+              <h1 className="dash-title">
+                <span className="text-emerald-400">~/dashboard</span>
+                <span className="term-caret">▋</span>
+                <span className="text-slate-600">—</span>
+                <span>UNISMUH CodeUnical</span>
+              </h1>
+              <span className="dash-chip">
+                {me.code && <span className="code">{me.code}</span>}
+                <span>{me.name}</span>
+                <span className="text-slate-600">·</span>
+                <span className="role">{me.role}</span>
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span className={`dash-live ${liveCount > 0 ? 'on' : ''}`}>
+              <span className="dot" /> <b>{liveCount}</b> live
+            </span>
+            <button onClick={logout} className="dash-logout">
+              $ logout
+            </button>
+          </div>
         </div>
       </header>
 
-      <nav className="flex gap-1 border-b border-emerald-500/15 px-6">
+      <nav className="dash-tabs">
         {tabs.map(([k, label]) => (
           <button
             key={k}
             onClick={() => setTab(k)}
-            className={`border-b-2 px-4 py-3 text-sm ${
-              tab === k ? 'border-violet-500 text-white' : 'border-transparent text-slate-500 hover:text-slate-300'
-            }`}
+            className={`dash-tab ${tab === k ? 'dash-tab-active' : ''}`}
           >
-            {label}
+            {TAB_ICON[k]}
+            <span>{label}</span>
+            {k === 'monitor' && (
+              <span className={`dash-badge ${liveCount === 0 ? 'zero' : ''}`}>{liveCount}</span>
+            )}
           </button>
         ))}
       </nav>
