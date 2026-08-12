@@ -120,6 +120,136 @@ body {
   will-change: transform;
 }
 
+/* Aurora: wash gradien lembut bergerak (transform saja, tanpa blur) */
+@keyframes cu-aurora {
+  0% {
+    transform: translate3d(-6%, -4%, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(6%, 4%, 0) scale(1.12);
+  }
+  100% {
+    transform: translate3d(-6%, -4%, 0) scale(1);
+  }
+}
+.cu-aurora {
+  position: absolute;
+  inset: -25%;
+  pointer-events: none;
+  background:
+    radial-gradient(38% 38% at 25% 30%, rgba(129, 140, 248, 0.2), transparent 60%),
+    radial-gradient(34% 34% at 78% 24%, rgba(34, 211, 238, 0.14), transparent 60%),
+    radial-gradient(42% 42% at 62% 82%, rgba(192, 132, 252, 0.16), transparent 60%);
+  animation: cu-aurora 22s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* Partikel naik lembut (dekoratif) */
+@keyframes cu-rise {
+  0% {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.65;
+  }
+  88% {
+    opacity: 0.45;
+  }
+  100% {
+    transform: translateY(-130px);
+    opacity: 0;
+  }
+}
+.cu-particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 9999px;
+  background: currentColor;
+  animation: cu-rise 8s linear infinite;
+  will-change: transform, opacity;
+}
+
+/* Cincin gradien berputar (di belakang logo) */
+@keyframes cu-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.cu-ring {
+  position: absolute;
+  border-radius: 9999px;
+  background: conic-gradient(
+    from 0deg,
+    transparent,
+    rgba(129, 140, 248, 0.55),
+    transparent 38%,
+    rgba(34, 211, 238, 0.45),
+    transparent 72%
+  );
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
+  animation: cu-spin 14s linear infinite;
+  pointer-events: none;
+}
+
+/* Halo berdenyut (opacity + scale, murah) */
+@keyframes cu-glow {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(1.08);
+  }
+}
+.cu-glow {
+  animation: cu-glow 4.5s ease-in-out infinite;
+  will-change: opacity, transform;
+}
+
+/* Sheen melintas untuk tombol (butuh position:relative + overflow-hidden) */
+@keyframes cu-sheen {
+  0% {
+    transform: translateX(-130%) skewX(-16deg);
+  }
+  55%,
+  100% {
+    transform: translateX(260%) skewX(-16deg);
+  }
+}
+.cu-sheen::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 45%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.28), transparent);
+  transform: translateX(-130%) skewX(-16deg);
+  animation: cu-sheen 3.8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Stagger masuk */
+.cu-d1 {
+  animation-delay: 0.08s;
+}
+.cu-d2 {
+  animation-delay: 0.2s;
+}
+.cu-d3 {
+  animation-delay: 0.34s;
+}
+.cu-d4 {
+  animation-delay: 0.5s;
+}
+.cu-d5 {
+  animation-delay: 0.68s;
+}
+
 /* ============================================================
    MODE HEMAT — matikan SEMUA animasi.
    Aktif via <html class="lite"> (auto-deteksi perangkat lemah)
@@ -134,7 +264,10 @@ html.lite .cu-gradient {
   color: #c4b5fd;
 }
 html.lite .cu-orb,
-html.lite .cu-grid {
+html.lite .cu-grid,
+html.lite .cu-aurora,
+html.lite .cu-particle,
+html.lite .cu-ring {
   display: none;
 }
 
