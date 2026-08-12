@@ -221,6 +221,8 @@ export default function Dashboard() {
   const [impProdi, setImpProdi] = useState('');
   const [impBusy, setImpBusy] = useState(false);
   const [impMsg, setImpMsg] = useState('');
+  const [showAddCourse, setShowAddCourse] = useState(false);
+  const [showImport, setShowImport] = useState(false);
   const [syncStatus, setSyncStatus] = useState<{
     configured: boolean;
     enabled: boolean;
@@ -1286,28 +1288,43 @@ export default function Dashboard() {
               })}
             </div>
             <aside className="space-y-5">
-              <form onSubmit={createCourse} className="rounded-lg border border-slate-800 bg-[#0b0e14] p-4">
-                <h3 className="mb-3 font-semibold text-white">Tambah Mata Kuliah</h3>
-                <input
-                  value={ncName}
-                  onChange={(e) => setNcName(e.target.value)}
-                  placeholder="Nama MK"
-                  className="mb-2 w-full rounded border border-slate-700 bg-[#0d1117] px-3 py-2 text-sm outline-none focus:border-violet-500"
-                />
-                <input
-                  value={ncSem}
-                  onChange={(e) => setNcSem(e.target.value)}
-                  type="number"
-                  min={1}
-                  max={8}
-                  placeholder="Semester (opsional)"
-                  className="mb-2 w-full rounded border border-slate-700 bg-[#0d1117] px-3 py-2 text-sm outline-none focus:border-violet-500"
-                />
-                {courseMsg && <p className="mb-2 text-sm text-amber-400">{courseMsg}</p>}
-                <button type="submit" className="w-full rounded bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500">
-                  Tambah
+              <div className="overflow-hidden rounded-lg border border-slate-800 bg-[#0b0e14]">
+                <button
+                  type="button"
+                  onClick={() => setShowAddCourse((v) => !v)}
+                  className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-semibold text-white transition hover:bg-white/5"
+                >
+                  <span className="flex items-center gap-2">
+                    <span className="text-emerald-400">+</span> Tambah Mata Kuliah
+                  </span>
+                  <span className={`text-slate-500 transition-transform ${showAddCourse ? 'rotate-90' : ''}`}>
+                    ▸
+                  </span>
                 </button>
-              </form>
+                {showAddCourse && (
+                  <form onSubmit={createCourse} className="border-t border-slate-800 p-4">
+                    <input
+                      value={ncName}
+                      onChange={(e) => setNcName(e.target.value)}
+                      placeholder="Nama MK"
+                      className="mb-2 w-full rounded border border-slate-700 bg-[#0d1117] px-3 py-2 text-sm outline-none focus:border-violet-500"
+                    />
+                    <input
+                      value={ncSem}
+                      onChange={(e) => setNcSem(e.target.value)}
+                      type="number"
+                      min={1}
+                      max={8}
+                      placeholder="Semester (opsional)"
+                      className="mb-2 w-full rounded border border-slate-700 bg-[#0d1117] px-3 py-2 text-sm outline-none focus:border-violet-500"
+                    />
+                    {courseMsg && <p className="mb-2 text-sm text-amber-400">{courseMsg}</p>}
+                    <button type="submit" className="w-full rounded bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500">
+                      Tambah
+                    </button>
+                  </form>
+                )}
+              </div>
 
               <div className="rounded-lg border border-slate-800 bg-[#0b0e14] p-4">
                 <div className="mb-1 flex items-center justify-between">
@@ -1344,32 +1361,47 @@ export default function Dashboard() {
                 </button>
               </div>
 
-              <div className="rounded-lg border border-slate-800 bg-[#0b0e14] p-4">
-                <h3 className="mb-1 font-semibold text-white">Impor Manual (cadangan)</h3>
-                <p className="mb-3 text-xs text-slate-500">
-                  Nanti mata kuliah <b className="text-slate-400">otomatis</b> tersinkron dari SICEKCOK.
-                  Impor manual ini hanya cadangan bila di SICEKCOK belum ada/belum lengkap.
-                </p>
-                <input
-                  value={impPeriode}
-                  onChange={(e) => setImpPeriode(e.target.value)}
-                  placeholder="Periode (mis. 20251)"
-                  className="mb-2 w-full rounded border border-slate-700 bg-[#0d1117] px-3 py-2 text-sm outline-none focus:border-violet-500"
-                />
-                <input
-                  value={impProdi}
-                  onChange={(e) => setImpProdi(e.target.value)}
-                  placeholder="Kode Prodi (opsional)"
-                  className="mb-2 w-full rounded border border-slate-700 bg-[#0d1117] px-3 py-2 text-sm outline-none focus:border-violet-500"
-                />
-                {impMsg && <p className="mb-2 text-sm text-amber-400">{impMsg}</p>}
+              <div className="overflow-hidden rounded-lg border border-slate-800 bg-[#0b0e14]">
                 <button
-                  onClick={importSicekcok}
-                  disabled={impBusy}
-                  className="w-full rounded border border-violet-600 px-4 py-2 text-sm font-medium text-violet-300 hover:bg-violet-950/40 disabled:opacity-50"
+                  type="button"
+                  onClick={() => setShowImport((v) => !v)}
+                  className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-semibold text-white transition hover:bg-white/5"
                 >
-                  {impBusy ? 'Mengimpor…' : 'Impor Mata Kuliah'}
+                  <span className="flex items-center gap-2">
+                    Impor Manual <span className="text-[10px] font-normal text-slate-500">(cadangan)</span>
+                  </span>
+                  <span className={`text-slate-500 transition-transform ${showImport ? 'rotate-90' : ''}`}>
+                    ▸
+                  </span>
                 </button>
+                {showImport && (
+                  <div className="border-t border-slate-800 p-4">
+                    <p className="mb-3 text-xs text-slate-500">
+                      Nanti mata kuliah <b className="text-slate-400">otomatis</b> tersinkron dari SICEKCOK.
+                      Impor manual ini hanya cadangan bila di SICEKCOK belum ada/belum lengkap.
+                    </p>
+                    <input
+                      value={impPeriode}
+                      onChange={(e) => setImpPeriode(e.target.value)}
+                      placeholder="Periode (mis. 20251)"
+                      className="mb-2 w-full rounded border border-slate-700 bg-[#0d1117] px-3 py-2 text-sm outline-none focus:border-violet-500"
+                    />
+                    <input
+                      value={impProdi}
+                      onChange={(e) => setImpProdi(e.target.value)}
+                      placeholder="Kode Prodi (opsional)"
+                      className="mb-2 w-full rounded border border-slate-700 bg-[#0d1117] px-3 py-2 text-sm outline-none focus:border-violet-500"
+                    />
+                    {impMsg && <p className="mb-2 text-sm text-amber-400">{impMsg}</p>}
+                    <button
+                      onClick={importSicekcok}
+                      disabled={impBusy}
+                      className="w-full rounded border border-violet-600 px-4 py-2 text-sm font-medium text-violet-300 hover:bg-violet-950/40 disabled:opacity-50"
+                    >
+                      {impBusy ? 'Mengimpor…' : 'Impor Mata Kuliah'}
+                    </button>
+                  </div>
+                )}
               </div>
               {openCourse && (
                 <div className="rounded-lg border border-slate-800 bg-[#0b0e14] p-4">
