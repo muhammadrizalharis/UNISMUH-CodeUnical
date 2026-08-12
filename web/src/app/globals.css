@@ -760,11 +760,16 @@ body {
   box-shadow: 0 8px 24px -10px rgba(16, 185, 129, 0.6);
 }
 .dash-tabs {
-  position: relative;
   display: flex;
-  gap: 4px;
-  padding: 0 12px;
-  border-bottom: 1px solid rgba(52, 211, 153, 0.12);
+  gap: 6px;
+  margin: 14px 16px 2px;
+  padding: 6px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(13, 20, 17, 0.7), rgba(8, 14, 11, 0.5));
+  border: 1px solid rgba(52, 211, 153, 0.14);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.03),
+    0 12px 32px -20px rgba(0, 0, 0, 0.85);
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -777,48 +782,43 @@ body {
   align-items: center;
   gap: 8px;
   white-space: nowrap;
-  padding: 11px 14px 12px;
+  padding: 9px 15px;
+  border-radius: 10px;
   font-size: 13px;
   color: #6b8f7f;
-  border-bottom: 2px solid transparent;
   cursor: pointer;
   transition:
-    color 0.15s ease,
-    background 0.15s ease;
-}
-.dash-tab:hover {
-  color: #a7f3d0;
-  background: linear-gradient(180deg, rgba(16, 185, 129, 0.06), transparent);
+    color 0.18s ease,
+    background 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
 }
 .dash-tab svg {
   height: 16px;
   width: 16px;
-  opacity: 0.85;
+  opacity: 0.8;
+  transition: opacity 0.18s ease;
 }
-.dash-tab-active {
-  color: #eafff4;
-  border-bottom-color: #10b981;
-  background: linear-gradient(180deg, rgba(16, 185, 129, 0.14), transparent);
+.dash-tab:hover {
+  color: #a7f3d0;
+  background: rgba(52, 211, 153, 0.08);
+  transform: translateY(-1px);
 }
-.dash-tab-active::after {
-  content: "";
-  position: absolute;
-  left: 8px;
-  right: 8px;
-  bottom: -1px;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, #34d399, #a3e635, transparent);
-  background-size: 200% 100%;
-  box-shadow: 0 0 12px rgba(52, 211, 153, 0.7);
-  animation: dash-sweep 2.4s linear infinite;
+.dash-tab:hover svg {
+  opacity: 1;
 }
-@keyframes dash-sweep {
-  0% {
-    background-position: 0% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
+.dash-tab-active,
+.dash-tab-active:hover {
+  color: #052e1f;
+  background: linear-gradient(180deg, #4ade80, #10b981);
+  box-shadow:
+    0 8px 22px -8px rgba(16, 185, 129, 0.75),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  font-weight: 600;
+  transform: translateY(-1px);
+}
+.dash-tab-active svg {
+  opacity: 1;
 }
 .dash-badge {
   min-width: 18px;
@@ -837,6 +837,12 @@ body {
 .dash-badge.zero {
   color: #5f7d6e;
   background: rgba(148, 163, 184, 0.15);
+  box-shadow: none;
+}
+.dash-tab-active .dash-badge,
+.dash-tab-active .dash-badge.zero {
+  color: #04160e;
+  background: rgba(4, 22, 14, 0.28);
   box-shadow: none;
 }
 
