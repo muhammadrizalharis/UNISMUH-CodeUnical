@@ -1020,7 +1020,7 @@ export default function Dashboard() {
                     <td className="px-4 py-2 text-slate-400">{s.id.slice(-6)}</td>
                     <td className={`px-4 py-2 ${s.passed === s.total ? 'text-emerald-400' : 'text-amber-400'}`}>{s.passed}/{s.total}</td>
                     <td className="px-4 py-2 text-slate-300">{s.score}/{s.maxScore}</td>
-                    <td className="px-4 py-2 text-slate-500">{new Date(s.createdAt).toLocaleTimeString('id-ID')}</td>
+                    <td className="px-4 py-2 text-slate-500">{new Date(s.createdAt).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'medium' })}</td>
                   </tr>
                 ))}
               </tbody>
