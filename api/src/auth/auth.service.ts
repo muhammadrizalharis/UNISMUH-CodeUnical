@@ -130,6 +130,10 @@ export class AuthService implements OnModuleInit {
     if (this.ssoOnlyActive() && user?.role !== 'superadmin') {
       throw new UnauthorizedException('Login lokal dinonaktifkan. Silakan masuk lewat SSO UNISMUH.');
     }
+    // URL gate rahasia = KHUSUS super-admin. Non-superadmin (atau email asing) memakai gate -> tolak.
+    if (gate && user?.role !== 'superadmin') {
+      throw new UnauthorizedException('Halaman ini khusus super-admin.');
+    }
     if (!user) throw new UnauthorizedException(BAD);
     if (user.status === 'suspended') throw new UnauthorizedException('Akun dinonaktifkan.');
     if (user.status === 'pending') throw new UnauthorizedException('Akun menunggu persetujuan super-admin.');
