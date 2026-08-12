@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import EnterToStart from './enter-to-start';
 
 // Status "boot" yang tercetak baris-per-baris di terminal.
 const BOOT = [
@@ -20,6 +21,7 @@ export default function Home() {
       {/* Latar CRT — statis di mode lite */}
       <div className="term-vignette" aria-hidden />
       <div className="term-scan" aria-hidden />
+      <EnterToStart href="/welcome" />
 
       {/* Lockup merek (kalem) */}
       <div className="term-line mb-5 flex items-center gap-2" style={{ animationDelay: '0.15s' }}>
@@ -87,7 +89,7 @@ export default function Home() {
 
       {/* Aksi */}
       <div
-        className="term-line mt-6 flex w-full max-w-2xl flex-wrap items-center gap-3"
+        className="term-line mt-6 flex w-full max-w-2xl flex-wrap items-center justify-center gap-3"
         style={{ animationDelay: '2.7s' }}
       >
         <Link href="/welcome" className="term-btn">
@@ -99,7 +101,7 @@ export default function Home() {
       </div>
 
       {/* Status bar */}
-      <div className="term-status term-line mt-8" style={{ animationDelay: '2.85s' }}>
+      <div className="term-status term-line mt-8 justify-center" style={{ animationDelay: '2.85s' }}>
         <span className="inline-flex items-center gap-1.5">
           <span className="term-live" /> sistem aktif
         </span>
