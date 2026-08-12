@@ -251,6 +251,292 @@ body {
 }
 
 /* ============================================================
+   TEMA TERMINAL / CODE-EDITOR (landing & login) — aksen hijau.
+   Sengaja BEDA TOTAL dari tema aurora. Animasi: transform/opacity/
+   width (ringan). Otomatis statis di mode lite (<=2 inti).
+   ============================================================ */
+.term {
+  font-family: var(--font-geist-mono), ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+
+.term-window {
+  position: relative;
+  z-index: 2;
+  overflow: hidden;
+  border: 1px solid rgba(52, 211, 153, 0.22);
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(13, 20, 17, 0.97), rgba(8, 14, 11, 0.98));
+  box-shadow:
+    0 30px 80px -30px rgba(0, 0, 0, 0.85),
+    0 0 40px -12px rgba(16, 185, 129, 0.25);
+  animation: term-boot 0.5s ease both;
+}
+@keyframes term-boot {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.term-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(52, 211, 153, 0.14);
+  background: rgba(255, 255, 255, 0.02);
+}
+.term-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 9999px;
+  display: inline-block;
+}
+.term-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+  font-size: 12px;
+  color: #6b8f7f;
+}
+.term-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #34d399;
+}
+.term-live {
+  width: 7px;
+  height: 7px;
+  border-radius: 9999px;
+  display: inline-block;
+  background: #22c55e;
+  box-shadow: 0 0 8px #22c55e;
+  animation: term-pulse 1.6s ease-in-out infinite;
+}
+@keyframes term-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.term-body {
+  padding: 18px;
+  font-size: 13.5px;
+  line-height: 1.85;
+  color: #cbe7d8;
+}
+.term-prompt {
+  color: #34d399;
+}
+.term-sep {
+  color: #3f6b57;
+}
+.term-path {
+  color: #86efac;
+}
+.term-key {
+  color: #eafff4;
+  font-weight: 600;
+}
+.term-flag {
+  color: #a3e635;
+}
+.term-muted {
+  color: #5f7d6e;
+}
+.term-ok {
+  color: #a3e635;
+  font-weight: 700;
+}
+.term-val {
+  color: #34d399;
+}
+.term-cmd {
+  white-space: nowrap;
+}
+
+/* Efek ketik (typewriter) — 1 baris deterministik */
+.term-type {
+  display: inline-block;
+  overflow: hidden;
+  white-space: nowrap;
+  vertical-align: bottom;
+  border-right: 2px solid #34d399;
+  width: 20ch;
+  animation:
+    term-typing 1.05s steps(20, end) both,
+    term-tcaret 0.8s step-end infinite;
+}
+@keyframes term-typing {
+  from {
+    width: 0;
+  }
+}
+@keyframes term-tcaret {
+  50% {
+    border-color: transparent;
+  }
+}
+
+/* Baris output tercetak berurutan (stagger via animation-delay inline) */
+.term-line {
+  animation: term-print 0.45s ease both;
+}
+@keyframes term-print {
+  from {
+    opacity: 0;
+    transform: translateX(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.term-logo {
+  color: #34d399;
+  font-size: 12px;
+  line-height: 1.15;
+  text-shadow: 0 0 12px rgba(52, 211, 153, 0.45);
+  margin: 2px 0 10px;
+}
+
+.term-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.term-lead {
+  flex: 1;
+  height: 0;
+  border-bottom: 1px dotted rgba(95, 125, 110, 0.5);
+  transform: translateY(-3px);
+}
+
+.term-caret {
+  display: inline-block;
+  margin-left: 2px;
+  color: #34d399;
+  text-shadow: 0 0 8px rgba(52, 211, 153, 0.7);
+  animation: term-caret 1.05s step-end infinite;
+}
+@keyframes term-caret {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.term-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: #04160e;
+  background: #10b981;
+  border: 1px solid #34d399;
+  border-radius: 8px;
+  padding: 10px 20px;
+  transition:
+    transform 0.18s ease,
+    background 0.18s ease,
+    box-shadow 0.18s ease;
+}
+.term-btn:hover {
+  background: #34d399;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 32px -10px rgba(16, 185, 129, 0.7);
+}
+.term-btn-prompt {
+  opacity: 0.7;
+}
+
+.term-kbd {
+  font-family: inherit;
+  font-size: 11px;
+  color: #a7f3d0;
+  border: 1px solid rgba(52, 211, 153, 0.4);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  padding: 1px 6px;
+  background: rgba(52, 211, 153, 0.08);
+}
+.term-hint {
+  font-size: 12px;
+  color: #5f7d6e;
+}
+.term-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: 11px;
+  color: #4f6b5d;
+}
+.term-brand-txt {
+  font-size: 12px;
+  letter-spacing: 0.25em;
+  color: rgba(110, 231, 183, 0.7);
+}
+
+/* Scanline CRT + vignette (overlay fixed, ringan) */
+.term-scan {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0px,
+    transparent 2px,
+    rgba(0, 30, 15, 0.35) 3px,
+    transparent 4px
+  );
+  opacity: 0.35;
+  animation: term-scan 6s linear infinite;
+}
+@keyframes term-scan {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(4px);
+  }
+}
+.term-vignette {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(120% 80% at 50% -10%, rgba(16, 185, 129, 0.1), transparent 55%),
+    radial-gradient(100% 100% at 50% 120%, rgba(0, 0, 0, 0.55), transparent 60%);
+}
+
+/* Lite: matikan scanline (animasi lain sudah dimatikan aturan html.lite *) */
+html.lite .term-scan {
+  display: none;
+}
+
+/* ============================================================
    MODE HEMAT — matikan SEMUA animasi.
    Aktif via <html class="lite"> (auto-deteksi perangkat lemah)
    atau prefers-reduced-motion.

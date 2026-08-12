@@ -1,71 +1,111 @@
 import Link from 'next/link';
 
-// Partikel dekoratif — posisi tetap (tanpa Math.random) agar tak ada mismatch hydration.
-const PARTICLES = [
-  { left: '10%', color: 'text-violet-400', delay: '0s', dur: '8s' },
-  { left: '22%', color: 'text-cyan-400', delay: '1.4s', dur: '9.5s' },
-  { left: '35%', color: 'text-indigo-400', delay: '2.6s', dur: '8.5s' },
-  { left: '48%', color: 'text-fuchsia-400', delay: '0.8s', dur: '10s' },
-  { left: '61%', color: 'text-cyan-300', delay: '3.2s', dur: '9s' },
-  { left: '73%', color: 'text-violet-300', delay: '1.9s', dur: '8.2s' },
-  { left: '85%', color: 'text-sky-400', delay: '2.2s', dur: '9.8s' },
-  { left: '93%', color: 'text-fuchsia-300', delay: '0.4s', dur: '8.8s' },
+// Status "boot" yang tercetak baris-per-baris di terminal.
+const BOOT = [
+  { k: 'proctoring AI', v: 'aktif' },
+  { k: 'editor terkunci', v: 'aktif' },
+  { k: 'pemantauan real-time', v: 'aktif' },
+  { k: 'anti-paste & pindah-tab', v: 'aktif' },
 ];
+
+// ASCII "CU" (backslash digandakan agar tak dimakan template literal).
+const LOGO = `  ___ _   _ 
+ / __| | | |
+| (__| |_| |
+ \\___|\\___/ `;
 
 export default function Home() {
   return (
-    <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[#0d1117] px-6 text-center">
-      {/* Dekorasi bergerak — semua otomatis mati/tersembunyi di mode lite / reduce-motion */}
-      <div className="cu-aurora" aria-hidden />
-      <div className="cu-grid" aria-hidden />
-      <div className="cu-orb cu-float text-violet-500" aria-hidden style={{ width: 360, height: 360, top: '-7rem', left: '-5rem' }} />
-      <div className="cu-orb cu-float text-cyan-500" aria-hidden style={{ width: 320, height: 320, bottom: '-7rem', right: '-5rem', animationDelay: '1.6s' }} />
-      <div className="cu-orb cu-float text-fuchsia-500" aria-hidden style={{ width: 240, height: 240, top: '28%', right: '12%', animationDelay: '3s' }} />
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2" aria-hidden>
-        {PARTICLES.map((p, i) => (
-          <span
-            key={i}
-            className={`cu-particle ${p.color}`}
-            style={{ left: p.left, bottom: 0, animationDelay: p.delay, animationDuration: p.dur }}
-          />
-        ))}
+    <main className="term relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[#0a0f0d] px-4 py-10">
+      {/* Latar CRT — statis di mode lite */}
+      <div className="term-vignette" aria-hidden />
+      <div className="term-scan" aria-hidden />
+
+      {/* Lockup merek (kalem) */}
+      <div className="term-line mb-5 flex items-center gap-2" style={{ animationDelay: '0.15s' }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo-emblem.png" alt="" width={24} height={24} className="opacity-90" />
+        <span className="term-brand-txt">UNISMUH · CODEUNICAL</span>
       </div>
 
-      <div className="relative">
-        {/* Logo + cincin berputar + halo denyut */}
-        <div className="cu-fade-up relative mx-auto mb-6 h-44 w-44">
-          <span
-            className="cu-glow absolute -inset-10 rounded-full"
-            aria-hidden
-            style={{ background: 'radial-gradient(circle, rgba(139,92,246,0.30), transparent 62%)' }}
-          />
-          <div className="cu-ring absolute -inset-6" aria-hidden />
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo-emblem.png" alt="UNISMUH CodeUnical" className="relative h-44 w-44" />
+      {/* Jendela terminal */}
+      <div className="term-window w-full max-w-2xl">
+        <div className="term-bar">
+          <span className="term-dot" style={{ background: '#ff5f56' }} />
+          <span className="term-dot" style={{ background: '#ffbd2e' }} />
+          <span className="term-dot" style={{ background: '#27c93f' }} />
+          <span className="term-title">peserta@codeunical: ~/ujian — bash</span>
+          <span className="term-badge">
+            <span className="term-live" /> online
+          </span>
         </div>
-        <p className="cu-fade-up cu-d1 mb-4 font-mono text-xs tracking-[0.3em] text-slate-500">
-          UNISMUH · INFORMATIKA
-        </p>
-        <h1 className="cu-fade-up cu-d2 text-5xl font-extrabold tracking-tight sm:text-7xl">
-          <span className="cu-gradient">CodeUnical</span>
-        </h1>
-        <p className="cu-fade-up cu-d3 mt-5 font-mono text-sm text-emerald-400">
-          &gt; ketik manual · run · proctored<span className="cu-blink">_</span>
-        </p>
-        <p className="cu-fade-up cu-d4 mx-auto mt-5 max-w-md text-slate-400">
-          Platform ujian koding anti-nyontek. Ketik kode secara manual, jalankan langsung, diawasi
-          berlapis.
-        </p>
-        <Link
-          href="/welcome"
-          className="cu-fade-up cu-d5 cu-sheen relative mt-9 inline-flex items-center gap-2 overflow-hidden rounded-lg bg-violet-600 px-7 py-3 font-medium text-white shadow-lg shadow-violet-900/30 transition hover:-translate-y-0.5 hover:bg-violet-500"
-        >
-          Masuk →
-        </Link>
+
+        <div className="term-body">
+          <p className="term-cmd">
+            <span className="term-prompt">$</span>{' '}
+            <span className="term-type">./codeunical --start</span>
+          </p>
+
+          <pre className="term-line term-logo" style={{ animationDelay: '1.15s' }}>
+            {LOGO}
+          </pre>
+
+          <p className="term-line" style={{ animationDelay: '1.35s' }}>
+            <span className="term-key">UNISMUH CodeUnical</span>{' '}
+            <span className="term-muted">v1.0</span>
+          </p>
+          <p className="term-line term-muted" style={{ animationDelay: '1.5s' }}>
+            # ujian coding anti-nyontek · Fakultas Teknik UNISMUH Makassar
+          </p>
+
+          <div
+            className="term-line my-3 h-px bg-emerald-500/15"
+            style={{ animationDelay: '1.65s' }}
+            aria-hidden
+          />
+
+          {BOOT.map((b, i) => (
+            <p
+              key={b.k}
+              className="term-line term-check"
+              style={{ animationDelay: `${1.8 + i * 0.15}s` }}
+            >
+              <span className="term-ok">[ OK ]</span>
+              <span>{b.k}</span>
+              <span className="term-lead" aria-hidden />
+              <span className="term-val">{b.v}</span>
+            </p>
+          ))}
+
+          <p className="term-line mt-3" style={{ animationDelay: '2.5s' }}>
+            <span className="term-prompt">$</span> <span className="term-key">login</span>{' '}
+            <span className="term-flag">--masuk</span>
+            <span className="term-caret">▋</span>
+          </p>
+        </div>
       </div>
 
-      <div className="cu-fade-up cu-d5 relative mt-14 flex items-center gap-2 font-mono text-xs text-slate-600">
-        <span className="cu-pulse inline-block h-2 w-2 rounded-full bg-emerald-500" /> sistem aktif
+      {/* Aksi */}
+      <div
+        className="term-line mt-6 flex w-full max-w-2xl flex-wrap items-center gap-3"
+        style={{ animationDelay: '2.7s' }}
+      >
+        <Link href="/welcome" className="term-btn">
+          <span className="term-btn-prompt">$</span> masuk <span aria-hidden>→</span>
+        </Link>
+        <span className="term-hint">
+          tekan <kbd className="term-kbd">Enter</kbd> untuk mulai ujian
+        </span>
+      </div>
+
+      {/* Status bar */}
+      <div className="term-status term-line mt-8" style={{ animationDelay: '2.85s' }}>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="term-live" /> sistem aktif
+        </span>
+        <span>node v22</span>
+        <span>:47300</span>
+        <span>UNISMUH · INFORMATIKA</span>
       </div>
     </main>
   );
