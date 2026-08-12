@@ -65,82 +65,114 @@ export default function Welcome() {
   const ssoOnlyActive = sso.ssoOnly && sso.enabled;
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#0d1117] px-6">
-      <div className="cu-grid" aria-hidden />
-      <div className="cu-orb cu-float text-violet-500" aria-hidden style={{ width: 320, height: 320, top: '-6rem', left: '-4rem' }} />
+    <main className="term relative flex min-h-screen flex-col items-center justify-center overflow-x-hidden bg-[#0a0f0d] px-4 py-10">
+      <div className="term-vignette" aria-hidden />
+      <div className="term-scan" aria-hidden />
 
-      <div className="cu-fade-up relative w-full max-w-sm">
-        <div className="mb-6 flex flex-col items-center text-center">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/logo-emblem.png"
-            alt="UNISMUH CodeUnical"
-            className="mb-2 h-36 w-36"
-          />
-          <p className="font-mono text-xs text-slate-500">UNISMUH · Ujian Koding</p>
+      {/* Logo di atas jendela */}
+      <div
+        className="term-line mb-5 flex flex-col items-center gap-2"
+        style={{ animationDelay: '0.1s' }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/logo-emblem.png"
+          alt="UNISMUH CodeUnical"
+          width={88}
+          height={88}
+          className="h-20 w-20"
+          style={{ filter: 'drop-shadow(0 0 16px rgba(52,211,153,0.25))' }}
+        />
+        <span className="term-brand-txt">UNISMUH · CODEUNICAL</span>
+      </div>
+
+      <div className="term-window w-full max-w-md">
+        <div className="term-bar">
+          <span className="term-dot" style={{ background: '#ff5f56' }} />
+          <span className="term-dot" style={{ background: '#ffbd2e' }} />
+          <span className="term-dot" style={{ background: '#27c93f' }} />
+          <span className="term-title">login@codeunical: ~ — bash</span>
+          <span className="term-badge">
+            <span className="term-live" /> online
+          </span>
         </div>
 
-        {/* SSO UNISMUH (aktif otomatis saat env SSO_* terisi) */}
-        {ssoMsg && (
-          <p className="mb-3 rounded border border-amber-800 bg-amber-950/40 px-3 py-2 text-center text-xs text-amber-300">
-            {ssoMsg}
+        <div className="term-body">
+          <p className="term-cmd mb-4">
+            <span className="term-prompt">$</span> <span className="term-key">login</span>{' '}
+            <span className="term-muted"># masuk untuk memulai ujian</span>
           </p>
-        )}
-        <button
-          onClick={() => sso.enabled && (window.location.href = `${API}/auth/sso/login`)}
-          disabled={!sso.enabled}
-          title={sso.enabled ? '' : 'Belum aktif — menunggu konfigurasi SSO oleh admin'}
-          className="mb-3 flex w-full items-center justify-center gap-2 rounded-lg border border-violet-700 bg-violet-950/40 px-6 py-3 font-medium text-violet-200 transition hover:bg-violet-900/50 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          <span aria-hidden>🎓</span> Masuk dengan {sso.label}
-          {!sso.enabled && (
-            <span className="ml-1 rounded bg-slate-800 px-1.5 py-0.5 font-mono text-[10px] text-slate-400">
-              segera
-            </span>
+
+          {ssoMsg && (
+            <p
+              className="term-line mb-3 rounded-md border px-3 py-2 text-xs"
+              style={{
+                borderColor: 'rgba(251,191,36,0.35)',
+                background: 'rgba(120,53,15,0.25)',
+                color: '#fcd34d',
+              }}
+            >
+              ! {ssoMsg}
+            </p>
           )}
-        </button>
 
-        {!ssoOnlyActive && (
-          <>
-        <div className="my-4 flex items-center gap-3 text-[11px] text-slate-600">
-          <div className="h-px flex-1 bg-slate-800" /> atau masuk akun <div className="h-px flex-1 bg-slate-800" />
-        </div>
-
-        {/* Login satu pintu: dosen & mahasiswa */}
-        <form onSubmit={login} className="space-y-3">
-          <input
-            type="email"
-            placeholder="Email (NIM mahasiswa / email dosen)"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded border border-slate-700 bg-[#0b0e14] px-3 py-2 text-sm outline-none focus:border-violet-500"
-          />
-          <input
-            type="password"
-            placeholder="Sandi"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded border border-slate-700 bg-[#0b0e14] px-3 py-2 text-sm outline-none focus:border-violet-500"
-          />
-          {err && <p className="text-sm text-rose-400">{err}</p>}
           <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded border border-slate-700 px-4 py-2 text-sm transition hover:bg-slate-800 disabled:opacity-40"
+            onClick={() => sso.enabled && (window.location.href = `${API}/auth/sso/login`)}
+            disabled={!sso.enabled}
+            title={sso.enabled ? '' : 'Belum aktif — menunggu konfigurasi SSO oleh admin'}
+            className="term-btn-ghost"
           >
-            {loading ? 'masuk…' : 'Masuk'}
+            <span className="term-btn-prompt">$</span> login --sso ({sso.label})
+            {!sso.enabled && <span className="term-tag">segera</span>}
           </button>
-        </form>
-          </>
-        )}
 
-        <p className="mt-4 text-center font-mono text-[11px] text-slate-600">
-          {ssoOnlyActive
-            ? 'Login hanya lewat SSO UNISMUH · dosen → penguji, mahasiswa → peserta'
-            : sso.enabled
-              ? 'Dosen → penguji, mahasiswa → peserta (otomatis dari SSO)'
-              : 'SSO UNISMUH aktif otomatis saat admin memasang kredensial'}
-        </p>
+          {!ssoOnlyActive && (
+            <>
+              <div className="term-or my-4">
+                <span>atau masuk akun</span>
+              </div>
+
+              <form onSubmit={login} className="space-y-3">
+                <div>
+                  <label className="term-label">login:</label>
+                  <input
+                    type="email"
+                    autoFocus
+                    autoComplete="username"
+                    placeholder="NIM mahasiswa / email dosen"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="term-input"
+                  />
+                </div>
+                <div>
+                  <label className="term-label">password:</label>
+                  <input
+                    type="password"
+                    autoComplete="current-password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="term-input"
+                  />
+                </div>
+                {err && <p className="term-err">✗ {err}</p>}
+                <button type="submit" disabled={loading} className="term-btn w-full justify-center">
+                  <span className="term-btn-prompt">$</span> {loading ? 'masuk…' : 'masuk'}
+                  {!loading && <span aria-hidden>→</span>}
+                </button>
+              </form>
+            </>
+          )}
+
+          <p className="term-line term-muted mt-4" style={{ fontSize: '11px' }}>
+            {ssoOnlyActive
+              ? '# login hanya lewat SSO · dosen → penguji, mahasiswa → peserta'
+              : sso.enabled
+                ? '# dosen → penguji, mahasiswa → peserta (otomatis dari SSO)'
+                : '# SSO UNISMUH aktif otomatis saat admin memasang kredensial'}
+          </p>
+        </div>
       </div>
     </main>
   );

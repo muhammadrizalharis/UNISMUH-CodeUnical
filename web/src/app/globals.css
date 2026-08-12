@@ -499,6 +499,120 @@ body {
   color: rgba(110, 231, 183, 0.7);
 }
 
+/* Form terminal (login & gate) */
+.term-input {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(52, 211, 153, 0.22);
+  border-radius: 6px;
+  padding: 9px 12px;
+  color: #d7f5e6;
+  font-family: inherit;
+  font-size: 13.5px;
+  outline: none;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.term-input::placeholder {
+  color: #4f6b5d;
+}
+.term-input:focus {
+  border-color: #34d399;
+  box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.12);
+}
+.term-label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 12px;
+  color: #34d399;
+}
+.term-or {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  color: #5f7d6e;
+}
+.term-or::before,
+.term-or::after {
+  content: "";
+  flex: 1;
+  height: 0;
+  border-bottom: 1px dotted rgba(95, 125, 110, 0.5);
+}
+.term-tag {
+  margin-left: 6px;
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 10px;
+  background: rgba(148, 163, 184, 0.15);
+  color: #94a3b8;
+}
+.term-err {
+  color: #fb7185;
+  font-size: 12.5px;
+}
+.term-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #a7f3d0;
+  background: rgba(52, 211, 153, 0.06);
+  border: 1px solid rgba(52, 211, 153, 0.35);
+  border-radius: 8px;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition:
+    background 0.16s ease,
+    border-color 0.16s ease;
+}
+.term-btn-ghost:hover:not(:disabled) {
+  background: rgba(52, 211, 153, 0.12);
+}
+.term-btn-ghost:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.term-btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  background: #e11d48;
+  border: 1px solid #fb7185;
+  border-radius: 8px;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition:
+    transform 0.16s ease,
+    background 0.16s ease,
+    box-shadow 0.16s ease;
+}
+.term-btn-danger:hover:not(:disabled) {
+  background: #f43f5e;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 32px -10px rgba(244, 63, 94, 0.6);
+}
+.term-btn-danger:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.term-danger .term-input:focus {
+  border-color: #fb7185;
+  box-shadow: 0 0 0 3px rgba(251, 113, 133, 0.14);
+}
+
 /* Scanline CRT + vignette (overlay fixed, ringan) */
 .term-scan {
   position: fixed;
