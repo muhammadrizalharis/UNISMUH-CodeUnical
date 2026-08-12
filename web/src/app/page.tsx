@@ -104,11 +104,8 @@ export default function Home() {
       {/* Status bar */}
       <div className="term-status term-line mt-8 justify-center" style={{ animationDelay: '2.85s' }}>
         <span className="inline-flex items-center gap-1.5">
-          <span className="term-live" /> sistem aktif
+          <span className="term-live" /> sistem ujian realtime · TEKNIK - UNISMUH
         </span>
-        <span>node v22</span>
-        <span>:47300</span>
-        <span>UNISMUH · INFORMATIKA</span>
       </div>
     </main>
   );
