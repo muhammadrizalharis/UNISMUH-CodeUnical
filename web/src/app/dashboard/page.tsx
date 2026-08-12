@@ -318,7 +318,8 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
-    if (me && tab === 'examiners') loadExaminers();
+    // Daftar semua penguji hanya untuk super-admin; penguji cukup mendaftarkan wajahnya.
+    if (me && tab === 'examiners' && me.role === 'superadmin') loadExaminers();
   }, [me, tab, loadExaminers]);
 
   const loadCourses = useCallback(() => {
@@ -1644,25 +1645,31 @@ export default function Dashboard() {
               )}
               {!enrollCamOn && enrollMsg && <p className="mt-2 text-sm text-amber-400">{enrollMsg}</p>}
             </div>
-            <div className="rounded-lg border border-slate-800">
-              <div className="border-b border-slate-800 px-4 py-2 font-mono text-xs text-slate-500">
-                TERDAFTAR ({examiners.length})
+            {me.role === 'superadmin' ? (
+              <div className="rounded-lg border border-slate-800">
+                <div className="border-b border-slate-800 px-4 py-2 font-mono text-xs text-slate-500">
+                  TERDAFTAR ({examiners.length})
+                </div>
+                {examiners.length === 0 ? (
+                  <p className="px-4 py-6 text-center text-sm text-slate-600">Belum ada wajah penguji terdaftar.</p>
+                ) : (
+                  <ul className="divide-y divide-slate-800">
+                    {examiners.map((n) => (
+                      <li key={n} className="flex items-center justify-between px-4 py-2 text-sm">
+                        <span className="text-slate-200">🎓 {n}</span>
+                        <button onClick={() => removeExaminer(n)} className="rounded border border-slate-700 px-2 py-1 text-xs text-rose-400 hover:bg-slate-800">
+                          Hapus
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
-              {examiners.length === 0 ? (
-                <p className="px-4 py-6 text-center text-sm text-slate-600">Belum ada wajah penguji terdaftar.</p>
-              ) : (
-                <ul className="divide-y divide-slate-800">
-                  {examiners.map((n) => (
-                    <li key={n} className="flex items-center justify-between px-4 py-2 text-sm">
-                      <span className="text-slate-200">🎓 {n}</span>
-                      <button onClick={() => removeExaminer(n)} className="rounded border border-slate-700 px-2 py-1 text-xs text-rose-400 hover:bg-slate-800">
-                        Hapus
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
+            ) : (
+              <p className="rounded-lg border border-slate-800 bg-[#0b0e14] px-4 py-3 text-xs text-slate-500">
+                Cukup daftarkan wajahmu <b className="text-slate-300">sekali</b>. Daftar semua penguji hanya bisa dilihat super-admin.
+              </p>
+            )}
           </div>
         )}
       </main>

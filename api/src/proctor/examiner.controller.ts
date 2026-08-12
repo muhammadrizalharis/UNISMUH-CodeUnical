@@ -12,7 +12,7 @@ import { ProctorService } from './proctor.service';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 
-// Kelola whitelist wajah penguji (hanya penguji/superadmin).
+// Wajah penguji: enroll (POST) utk penguji+superadmin; lihat daftar (GET) & hapus (DELETE) HANYA superadmin.
 @Controller('examiners')
 @UseGuards(RolesGuard)
 @Roles('penguji', 'superadmin')
@@ -20,6 +20,7 @@ export class ExaminerController {
   constructor(private readonly proctor: ProctorService) {}
 
   @Get()
+  @Roles('superadmin')
   list() {
     return this.proctor.listExaminers();
   }
@@ -33,6 +34,7 @@ export class ExaminerController {
   }
 
   @Delete(':name')
+  @Roles('superadmin')
   remove(@Param('name') name: string) {
     return this.proctor.removeExaminer(name);
   }
