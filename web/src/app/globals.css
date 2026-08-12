@@ -613,6 +613,22 @@ body {
   box-shadow: 0 0 0 3px rgba(251, 113, 133, 0.14);
 }
 
+/* Dashboard: remap aksen violet -> hijau. Tailwind v4 emit utilitas sbg
+   var(--color-*), jadi override variabel di lingkup ini me-retint semuanya. */
+.term-dash {
+  --color-violet-300: #6ee7b7;
+  --color-violet-400: #34d399;
+  --color-violet-500: #10b981;
+  --color-violet-600: #059669;
+  --color-violet-700: #047857;
+  --color-violet-800: #065f46;
+  --color-violet-900: #064e3b;
+  --color-violet-950: #022c22;
+}
+.term-dash ::selection {
+  background: rgba(16, 185, 129, 0.28);
+}
+
 /* Scanline CRT + vignette (overlay fixed, ringan) */
 .term-scan {
   position: fixed;

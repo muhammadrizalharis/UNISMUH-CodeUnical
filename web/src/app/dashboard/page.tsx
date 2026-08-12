@@ -865,13 +865,15 @@ export default function Dashboard() {
   if (me.role === 'superadmin') tabs.push(['users', 'Kelola Akun']);
 
   return (
-    <div className="min-h-screen bg-[#0d1117] text-slate-200">
-      <header className="flex items-center justify-between border-b border-slate-800 px-6 py-4">
+    <div className="term term-dash min-h-screen bg-[#0a0f0d] text-slate-200">
+      <header className="flex items-center justify-between border-b border-emerald-500/15 px-6 py-4">
         <div>
-          <h1 className="flex items-center gap-2 text-xl font-bold text-white">
+          <h1 className="flex items-center gap-2 text-lg font-semibold text-white">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo-emblem.png" alt="" className="h-10 w-10" />
-            <span>UNISMUH <span className="text-violet-400">CodeUnical</span> · Dashboard</span>
+            <img src="/logo-emblem.png" alt="" className="h-9 w-9" />
+            <span className="text-emerald-400">~/dashboard</span>
+            <span className="text-slate-600">—</span>
+            <span>UNISMUH CodeUnical</span>
           </h1>
           <p className="font-mono text-xs text-slate-500">
             {me.code && <span className="text-slate-300">{me.code}</span>} {me.code && '· '}{me.name} · <span className="text-violet-400">{me.role}</span>
@@ -882,13 +884,13 @@ export default function Dashboard() {
             <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" />
             {liveCount} aktif
           </span>
-          <button onClick={logout} className="rounded border border-slate-700 px-3 py-1.5 text-xs hover:bg-slate-800">
-            Keluar
+          <button onClick={logout} className="rounded border border-emerald-500/30 px-3 py-1.5 text-xs text-emerald-300 transition hover:bg-emerald-500/10">
+            $ logout
           </button>
         </div>
       </header>
 
-      <nav className="flex gap-1 border-b border-slate-800 px-6">
+      <nav className="flex gap-1 border-b border-emerald-500/15 px-6">
         {tabs.map(([k, label]) => (
           <button
             key={k}
