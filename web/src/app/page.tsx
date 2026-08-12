@@ -19,16 +19,23 @@ const LOGO = [
 
 export default function Home() {
   return (
-    <main className="term relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[#0a0f0d] px-4 py-10">
+    <main className="term relative flex min-h-screen flex-col items-center justify-center overflow-x-hidden bg-[#0a0f0d] px-4 py-10">
       {/* Latar CRT — statis di mode lite */}
       <div className="term-vignette" aria-hidden />
       <div className="term-scan" aria-hidden />
       <EnterToStart href="/welcome" />
 
-      {/* Lockup merek (kalem) */}
-      <div className="term-line mb-5 flex items-center gap-2" style={{ animationDelay: '0.15s' }}>
+      {/* Lockup merek: logo besar di atas, teks di bawah */}
+      <div className="term-line mb-6 flex flex-col items-center gap-3" style={{ animationDelay: '0.15s' }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo-emblem.png" alt="" width={24} height={24} className="opacity-90" />
+        <img
+          src="/logo-emblem.png"
+          alt="UNISMUH CodeUnical"
+          width={128}
+          height={128}
+          className="h-28 w-28 sm:h-32 sm:w-32"
+          style={{ filter: 'drop-shadow(0 0 18px rgba(52,211,153,0.25))' }}
+        />
         <span className="term-brand-txt">UNISMUH · CODEUNICAL</span>
       </div>
 
