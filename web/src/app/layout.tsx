@@ -23,12 +23,15 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="id"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
       <head>
         <script
           dangerouslySetInnerHTML={{
             __html:
-              "(function(){try{var c=navigator.hardwareConcurrency||8,m=navigator.deviceMemory||8,r=matchMedia('(prefers-reduced-motion: reduce)').matches;if(c<=4||m<=4||r){document.documentElement.classList.add('lite');}}catch(e){}})();",
+              // Mode lite HANYA utk perangkat sangat lemah (<=2 inti) atau reduce-motion.
+              // Animasi = transform/opacity murni -> laptop biasa (4-8 inti) tetap mulus.
+              "(function(){try{var c=navigator.hardwareConcurrency||8,r=matchMedia('(prefers-reduced-motion: reduce)').matches;if(r||c<=2){document.documentElement.classList.add('lite');}}catch(e){}})();",
           }}
         />
       </head>
