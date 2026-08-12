@@ -22,6 +22,8 @@ interface Attempt {
   live: boolean;
   events: number;
   keystrokes: number;
+  startedAt: string;
+  lastSeenAt: string;
   peserta?: { name: string; code: string | null } | null;
   examTitle?: string | null;
 }
@@ -940,6 +942,8 @@ export default function Dashboard() {
               <thead className="bg-[#0b0e14] font-mono text-xs text-slate-500">
                 <tr>
                   <th className="px-4 py-2">Peserta</th>
+                  <th className="px-4 py-2">Ujian</th>
+                  <th className="px-4 py-2">Mulai</th>
                   <th className="px-4 py-2">Attempt</th>
                   <th className="px-4 py-2">Status</th>
                   <th className="px-4 py-2">Strike</th>
@@ -952,7 +956,7 @@ export default function Dashboard() {
               <tbody>
                 {monitorRows.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="px-4 py-6 text-center text-slate-600">
+                    <td colSpan={10} className="px-4 py-6 text-center text-slate-600">
                       {tab === 'arsip' ? 'Belum ada arsip attempt.' : 'Belum ada peserta yang sedang ujian.'}
                     </td>
                   </tr>
@@ -970,9 +974,10 @@ export default function Dashboard() {
                       ) : (
                         <span className="text-slate-600">Anonim</span>
                       )}
-                      {a.examTitle && (
-                        <div className="text-[10px] text-slate-600">{a.examTitle}</div>
-                      )}
+                    </td>
+                    <td className="px-4 py-2 text-slate-300">{a.examTitle ?? <span className="text-slate-600">—</span>}</td>
+                    <td className="px-4 py-2 text-slate-500">
+                      {new Date(a.startedAt).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' })}
                     </td>
                     <td className="px-4 py-2 text-slate-400">{a.id.slice(-6)}</td>
                     <td className="px-4 py-2">
