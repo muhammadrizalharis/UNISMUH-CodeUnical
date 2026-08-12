@@ -45,11 +45,24 @@ interface SimPerson {
   name: string | null;
   code: string | null;
   sub?: string;
+  subId?: string;
 }
 interface SimPair {
   a: SimPerson;
   b: SimPerson;
   similarity: number;
+}
+interface PairSide {
+  name: string | null;
+  code: string | null;
+  sub?: string;
+  source: string;
+  matched: number[];
+}
+interface PairDetail {
+  similarity: number;
+  a: PairSide;
+  b: PairSide;
 }
 interface UserRow {
   id: string;
@@ -204,6 +217,92 @@ function SimName({ p }: { p: SimPerson }) {
   );
 }
 
+// Modal detail sepasang submission: kode berdampingan, baris identik strukturnya disorot merah.
+function SimPairModal({
+  problemId,
+  a,
+  b,
+  onClose,
+}: {
+  problemId: string;
+  a: SimPerson;
+  b: SimPerson;
+  onClose: () => void;
+}) {
+  const [data, setData] = useState<PairDetail | null>(null);
+  const [err, setErr] = useState('');
+  useEffect(() => {
+    if (!a.subId || !b.subId) {
+      setErr('ID submission tidak tersedia.');
+      return;
+    }
+    fetch(
+      `${API}/problems/${problemId}/similarity/pair?a=${encodeURIComponent(a.subId)}&b=${encodeURIComponent(b.subId)}`,
+      { credentials: 'include' },
+    )
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error('http'))))
+      .then(setData)
+      .catch(() => setErr('Gagal memuat detail.'));
+  }, [problemId, a.subId, b.subId]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
+      <div
+        className="flex max-h-[88vh] w-full max-w-5xl flex-col rounded-xl border border-slate-700 bg-[#0b0e14]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between border-b border-slate-800 px-4 py-2">
+          <span className="font-mono text-sm text-slate-300">
+            🔍 Detail kemiripan{data ? ` · ${data.similarity}%` : ''}
+          </span>
+          <button onClick={onClose} className="text-slate-500 hover:text-white">
+            ✕
+          </button>
+        </div>
+        {err ? (
+          <p className="p-6 text-center text-rose-400">{err}</p>
+        ) : !data ? (
+          <p className="p-8 text-center text-slate-500">Memuat…</p>
+        ) : (
+          <div className="grid flex-1 gap-3 overflow-auto p-4 md:grid-cols-2">
+            {[data.a, data.b].map((side, idx) => (
+              <div key={idx} className="flex min-w-0 flex-col rounded-lg border border-slate-800">
+                <div className="border-b border-slate-800 px-3 py-2 text-xs">
+                  <SimName p={side} />
+                  <span className="ml-1 text-slate-600">· {side.matched.length} baris cocok</span>
+                </div>
+                <pre className="flex-1 overflow-auto text-xs leading-5">
+                  <code>
+                    {side.source.split('\n').map((line, i) => {
+                      const hit = side.matched.includes(i);
+                      return (
+                        <div key={i} className={hit ? 'flex bg-rose-500/15' : 'flex'}>
+                          <span className="w-9 shrink-0 select-none border-r border-slate-800 px-2 text-right text-slate-600">
+                            {i + 1}
+                          </span>
+                          <span className={`whitespace-pre px-2 ${hit ? 'text-rose-200' : 'text-slate-300'}`}>
+                            {line || ' '}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </code>
+                </pre>
+              </div>
+            ))}
+          </div>
+        )}
+        {data && (
+          <div className="border-t border-slate-800 px-4 py-2 text-[11px] text-slate-500">
+            Baris berlatar merah = struktur identik setelah normalisasi (nama variabel/angka
+            diseragamkan) — indikasi kuat penyalinan.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const router = useRouter();
   const [me, setMe] = useState<Me | null | undefined>(undefined);
@@ -217,6 +316,7 @@ export default function Dashboard() {
   const [sim, setSim] = useState<{ total: number; exam: string | null; pairs: SimPair[] } | null>(
     null,
   );
+  const [simPair, setSimPair] = useState<{ a: SimPerson; b: SimPerson } | null>(null);
   const [replayId, setReplayId] = useState<string | null>(null);
   const [users, setUsers] = useState<UserRow[]>([]);
   const [prodiInfo, setProdiInfo] = useState<ProdiInfo | null>(null);
@@ -1153,6 +1253,12 @@ export default function Dashboard() {
                           <SimName p={p.a} /> <span className="text-slate-600">↔</span> <SimName p={p.b} />
                         </span>
                         {p.similarity >= 90 && <span className="text-rose-500">⚠ nyaris identik</span>}
+                        <button
+                          onClick={() => setSimPair({ a: p.a, b: p.b })}
+                          className="ml-auto shrink-0 rounded border border-slate-700 px-2 py-0.5 text-[11px] text-slate-300 hover:bg-slate-800"
+                        >
+                          🔍 detail
+                        </button>
                       </div>
                     ))}
                   </div>
@@ -2107,6 +2213,15 @@ export default function Dashboard() {
           attemptId={replayId}
           peserta={attempts.find((a) => a.id === replayId)?.peserta ?? null}
           onClose={() => setReplayId(null)}
+        />
+      )}
+
+      {simPair && (
+        <SimPairModal
+          problemId={simProblem}
+          a={simPair.a}
+          b={simPair.b}
+          onClose={() => setSimPair(null)}
         />
       )}
     </div>

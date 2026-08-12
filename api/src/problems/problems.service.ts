@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { GradingService } from '../grading/grading.service';
-import { codeFingerprint, similarity as simScore } from '../similarity/similarity';
+import { codeFingerprint, lineSignatures, similarity as simScore } from '../similarity/similarity';
 
 export interface CaseInput {
   stdin?: string;
@@ -139,8 +139,8 @@ export class ProblemsService {
     const who = (s: { id: string; userId: string | null }) => {
       const u = s.userId ? uMap.get(s.userId) : undefined;
       return u
-        ? { name: u.name, code: u.code ?? null }
-        : { name: null, code: null, sub: s.id.slice(-6) };
+        ? { name: u.name, code: u.code ?? null, subId: s.id }
+        : { name: null, code: null, sub: s.id.slice(-6), subId: s.id };
     };
     const fps = subs.map((s) => ({ id: s.id, userId: s.userId, fp: codeFingerprint(s.code) }));
     const pairs: {
@@ -158,6 +158,49 @@ export class ProblemsService {
     }
     pairs.sort((x, y) => y.similarity - x.similarity);
     return { total: subs.length, exam, pairs: pairs.slice(0, 100) };
+  }
+
+  // Detail sepasang submission: kode lengkap + indeks baris yang identik strukturnya.
+  async similarityPair(aId: string, bId: string) {
+    const [a, b] = await Promise.all([
+      this.prisma.submission.findUnique({
+        where: { id: aId },
+        select: { id: true, code: true, userId: true },
+      }),
+      this.prisma.submission.findUnique({
+        where: { id: bId },
+        select: { id: true, code: true, userId: true },
+      }),
+    ]);
+    if (!a || !b) throw new NotFoundException('Submission tidak ditemukan.');
+    const userIds = [a.userId, b.userId].filter(Boolean) as string[];
+    const users = userIds.length
+      ? await this.prisma.user.findMany({
+          where: { id: { in: userIds } },
+          select: { id: true, name: true, code: true },
+        })
+      : [];
+    const uMap = new Map(users.map((u) => [u.id, u]));
+    const who = (s: { id: string; userId: string | null }) => {
+      const u = s.userId ? uMap.get(s.userId) : undefined;
+      return u
+        ? { name: u.name, code: u.code ?? null }
+        : { name: null, code: null, sub: s.id.slice(-6) };
+    };
+    // Sorot baris yang tanda-tangan token-nya sama (>=3 token biar tak sekadar simbol).
+    const sigA = lineSignatures(a.code);
+    const sigB = lineSignatures(b.code);
+    const meaningful = (sig: string) => sig.split(' ').filter(Boolean).length >= 3;
+    const setA = new Set(sigA.filter(meaningful));
+    const setB = new Set(sigB.filter(meaningful));
+    const matchedA = sigA.map((s, i) => (meaningful(s) && setB.has(s) ? i : -1)).filter((i) => i >= 0);
+    const matchedB = sigB.map((s, i) => (meaningful(s) && setA.has(s) ? i : -1)).filter((i) => i >= 0);
+    const sim = Math.round(simScore(codeFingerprint(a.code), codeFingerprint(b.code)) * 100);
+    return {
+      similarity: sim,
+      a: { ...who(a), source: a.code, matched: matchedA },
+      b: { ...who(b), source: b.code, matched: matchedB },
+    };
   }
 
   async authoringDetail(id: string) {

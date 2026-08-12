@@ -76,3 +76,9 @@ export function similarity(a: Set<number>, b: Set<number>): number {
   for (const x of small) if (large.has(x)) inter += 1;
   return inter / Math.min(a.size, b.size);
 }
+
+// Tanda-tangan token per baris (identifier->V, angka->N, tanpa komentar) untuk
+// menyorot baris yang identik SECARA STRUKTURAL di tampilan detail (tahan ganti nama var).
+export function lineSignatures(code: string): string[] {
+  return code.split('\n').map((line) => tokenize(line).join(' '));
+}

@@ -7,6 +7,7 @@ import {
   Param,
   Post,
   Put,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -44,6 +45,13 @@ export class ProblemsController {
   @Roles('penguji', 'superadmin')
   similarity(@Param('id') id: string) {
     return this.problems.similarity(id);
+  }
+
+  @Get(':id/similarity/pair')
+  @UseGuards(RolesGuard)
+  @Roles('penguji', 'superadmin')
+  similarityPair(@Query('a') a: string, @Query('b') b: string) {
+    return this.problems.similarityPair(a, b);
   }
 
   @Get(':id/full')
