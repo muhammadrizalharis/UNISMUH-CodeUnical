@@ -176,9 +176,9 @@ tombol “Masuk dengan SSO UNISMUH” otomatis aktif:
 ```env
 SSO_CLIENT_ID=...            # dari admin SSO UNISMUH
 SSO_CLIENT_SECRET=...
-SSO_AUTHORIZE_URL=https://sso.unismuh.ac.id/oauth/authorize
-SSO_TOKEN_URL=https://sso.unismuh.ac.id/oauth/token
-SSO_USERINFO_URL=https://sso.unismuh.ac.id/oauth/userinfo
+SSO_AUTHORIZE_URL=https://<sso-host>/oauth/authorize
+SSO_TOKEN_URL=https://<sso-host>/oauth/token
+SSO_USERINFO_URL=https://<sso-host>/oauth/userinfo
 SSO_REDIRECT_URI=https://<domain-api>/auth/sso/callback
 # opsional — pemetaan peran dari klaim SSO:
 SSO_ROLE_CLAIM=role          # nama klaim peran (default: role)

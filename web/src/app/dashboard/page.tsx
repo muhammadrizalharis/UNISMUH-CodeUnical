@@ -1275,7 +1275,7 @@ export default function Dashboard() {
               <h3 className="font-semibold text-white">Tambah Akun</h3>
               <p className="text-xs text-slate-500">
                 Hanya super admin yang boleh membuat akun (tanpa self-register). Untuk mahasiswa, pakai email NIM
-                (mis. <span className="text-slate-400">105841103223@student.unismuh.ac.id</span>) → ID otomatis CU&lt;NIM&gt;.
+                (mis. <span className="text-slate-400">105841100000@student.unismuh.ac.id</span>) → ID otomatis CU&lt;NIM&gt;.
                 Saat ini peserta <b className="text-slate-400">khusus prodi Informatika</b> (NIM diawali 10584); prodi lain menyusul.
               </p>
               <select

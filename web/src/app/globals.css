@@ -907,4 +907,4 @@ html.lite .cu-ring {
 }
 
 /* Catatan: animasi SENGAJA tetap tampil walau prefers-reduced-motion (permintaan
-   produk, selaras dg ComputeHub/axon/calyzr). Hanya mode lite (<=2 inti) yg statis. */
+   produk). Hanya mode lite (<=2 inti) yg statis. */

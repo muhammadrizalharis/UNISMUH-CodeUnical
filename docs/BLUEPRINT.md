@@ -198,7 +198,7 @@ Karena dosen keliling & menunduk melihat layar mahasiswa, penguji **mendaftarkan
 
 ## 9. Arsitektur (Stack Mandiri)
 
-> **Prinsip isolasi:** CodeUnical berdiri sendiri — **tidak** menumpang Docker/DB/sandbox proyek lain (ComputeHub, calyzr, AXON, Askara). Namespace, jaringan, volume, dan port sendiri.
+> **Prinsip isolasi:** CodeUnical berdiri sendiri — **tidak** menumpang Docker/DB/sandbox layanan lain di server yang sama. Namespace, jaringan, volume, dan port sendiri.
 
 ```mermaid
 flowchart TB
@@ -234,7 +234,7 @@ flowchart TB
 | Redis | **47379** |
 | MinIO (API / Console) | **47900 / 47901** |
 
-> Port yang dihindari (milik proyek lain): 8088/5445 (ComputeHub), 5435/3002 (Askara), 55432/56379/59000-1/4000 (AXON), 46xxx (calyzr), 11434-11436 (Ollama).
+> Blok 47xxx dipilih agar tidak bentrok dengan layanan lain yang berjalan di server yang sama.
 
 ---
 
@@ -249,14 +249,14 @@ flowchart TB
 | **Produksi ujian** | Server kampus (same-origin) | Server kampus | Domain kampus / LAN | Paling andal; data tidak ke cloud |
 
 ### Aturan penting
-- **Ujian Lab** → mahasiswa di LAN kampus menembak server langsung (mis. `10.33.33.11:47300`) — tanpa internet/tunnel/Vercel = paling cepat & andal.
+- **Ujian Lab** → mahasiswa di LAN kampus menembak server langsung (mis. `<IP-SERVER-LAB>:47300`) — tanpa internet/tunnel/Vercel = paling cepat & andal.
 - **Ujian Remote** → butuh **domain kampus** (endgame), bukan tunnel.
 - **Vercel = preview/demo saja.** Ujian sungguhan + data kamera **tidak** lewat Vercel.
-- **URL API fleksibel per-environment** (`NEXT_PUBLIC_API_URL`): localhost → `:47080`; Vercel → URL tunnel; domain kampus → same-origin. (Pelajaran dari Askara/AXON: jangan hardcode base URL.)
+- **URL API fleksibel per-environment** (`NEXT_PUBLIC_API_URL`): localhost → `:47080`; Vercel → URL tunnel; domain kampus → same-origin. (Pelajaran dari proyek sebelumnya: jangan hardcode base URL.)
 
 ### Tunnel
 - **Cloudflare Tunnel** (named), **BUKAN** ngrok free (kuota ~1GB/bln + interstitial = tak layak untuk ujian).
-- Endgame: **nginx reverse-proxy kampus + HTTPS** di domain (pola `computehub.lab.if.unismuh.ac.id`).
+- Endgame: **nginx reverse-proxy kampus + HTTPS** di domain (pola `exam.kampus.ac.id`).
 
 ### Monitoring
 - **Prometheus + Grafana + Alertmanager → Telegram** (memakai pola bot Telegram yang sudah ada).
@@ -267,7 +267,7 @@ flowchart TB
 - **Auto-save + resume sesi** → putus koneksi ≠ kehilangan kerja.
 - **Heartbeat** → deteksi putus, sambung mulus saat kembali.
 - **Degradasi anggun** → jika service proctor/ML mati, **ujian tetap jalan** (pelanggaran di-antre, jangan blokir ujian).
-- **Pool DB benar** → `idle_in_transaction_timeout`, `pool_size`, hindari eager-load (pelajaran insiden ComputeHub) agar tahan 40 mahasiswa submit bersamaan.
+- **Pool DB benar** → `idle_in_transaction_timeout`, `pool_size`, hindari eager-load (pelajaran dari insiden produksi sebelumnya) agar tahan 40 mahasiswa submit bersamaan.
 - **Antrean penilaian** (BullMQ/Redis) → eksekusi berat tidak menyumbat API.
 - **Backup otomatis terenkripsi** (pola rclone → Google Drive).
 - **Auto-restart** (Docker `restart: unless-stopped` + systemd) → tahan reboot/crash.
@@ -369,7 +369,7 @@ Dibangun **bertahap** agar tidak berantakan:
 
 ## 16. Aturan Proyek
 
-- **Mandiri penuh** — TIDAK menumpang sumber daya proyek lain (ComputeHub/calyzr/AXON/Askara). Docker, DB, sandbox, port sendiri.
+- **Mandiri penuh** — TIDAK menumpang sumber daya layanan lain di server. Docker, DB, sandbox, port sendiri.
 - **Isolasi Docker** — namespace/prefix `codeunical-*`, jaringan & volume sendiri; jangan `prune` global.
 - **Bahasa komunikasi**: Indonesia.
 - **Nama**: CodeUnical (tampil "UNISMUH CodeUnical" di UI).
