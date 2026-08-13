@@ -4,7 +4,7 @@
 
 <br/>
 
-<code>status: in-development</code> &nbsp;·&nbsp; <code>mode: lab &amp; remote</code> &nbsp;·&nbsp; <code>license: proprietary</code> &nbsp;·&nbsp; <code>UNISMUH · Informatika</code>
+<code>status: in-development</code> &nbsp;·&nbsp; <code>mode: lab &amp; remote</code> &nbsp;·&nbsp; <code>license: MIT</code> &nbsp;·&nbsp; <code>UNISMUH · Informatika</code>
 
 <br/>
 
@@ -215,6 +215,6 @@ Peran otomatis: **dosen → penguji**, **mahasiswa → peserta**, lainnya → *p
 
 **Pengembang** — Muhammad Rizal Haris
 
-<sub>© 2026 Muhammad Rizal Haris · Proprietary &amp; Confidential</sub>
+<sub>© 2026 Muhammad Rizal Haris · Rilis di bawah <a href="LICENSE">MIT License</a></sub>
 
 </div>
