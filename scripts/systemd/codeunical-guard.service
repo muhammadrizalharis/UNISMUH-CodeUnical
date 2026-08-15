@@ -1,0 +1,14 @@
+[Unit]
+Description=CodeUnical Guard (bot ops Telegram — pantau layanan, alert padam/PULIH)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/muhammadrizalharis/CodeUnical
+Environment=PATH=/home/muhammadrizalharis/.nvm/versions/node/v22.23.1/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=/home/muhammadrizalharis/.nvm/versions/node/v22.23.1/bin/node scripts/ops-bot.mjs
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target
