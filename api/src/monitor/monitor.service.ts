@@ -1,13 +1,60 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
+interface Requester {
+  id: string;
+  role: string;
+}
+
 @Injectable()
 export class MonitorService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async attempts(examId?: string) {
+  // Ujian milik penguji: dibuat sendiri ATAU mata kuliahnya dia yang punya. Superadmin = semua.
+  private async ownedExamIds(userId: string): Promise<string[]> {
+    const exams = await this.prisma.exam.findMany({
+      where: { OR: [{ createdById: userId }, { course: { createdById: userId } }] },
+      select: { id: true },
+    });
+    return exams.map((e) => e.id);
+  }
+
+  private async ownedProblemIds(userId: string): Promise<string[]> {
+    const problems = await this.prisma.problem.findMany({
+      where: { course: { createdById: userId } },
+      select: { id: true },
+    });
+    return problems.map((p) => p.id);
+  }
+
+  // 'all' = tanpa batas (superadmin), 'none' = tak ada yang boleh dilihat, atau daftar id.
+  private async scopeExamIds(
+    examId: string | undefined,
+    user: Requester,
+  ): Promise<'all' | 'none' | string[]> {
+    if (user.role === 'superadmin') return examId ? [examId] : 'all';
+    const owned = await this.ownedExamIds(user.id);
+    if (owned.length === 0) return 'none';
+    if (examId) return owned.includes(examId) ? [examId] : 'none';
+    return owned;
+  }
+
+  private async scopeProblemIds(
+    problemId: string | undefined,
+    user: Requester,
+  ): Promise<'all' | 'none' | string[]> {
+    if (user.role === 'superadmin') return problemId ? [problemId] : 'all';
+    const owned = await this.ownedProblemIds(user.id);
+    if (owned.length === 0) return 'none';
+    if (problemId) return owned.includes(problemId) ? [problemId] : 'none';
+    return owned;
+  }
+
+  async attempts(examId: string | undefined, user: Requester) {
+    const scope = await this.scopeExamIds(examId, user);
+    if (scope === 'none') return [];
     const rows = await this.prisma.examAttempt.findMany({
-      where: examId ? { examId } : undefined,
+      where: scope === 'all' ? {} : { examId: { in: scope } },
       orderBy: { startedAt: 'desc' },
       take: 100,
       include: { _count: { select: { events: true, keystrokes: true } } },
@@ -48,14 +95,19 @@ export class MonitorService {
     });
   }
 
-  /** Daftar ujian yang punya attempt (untuk dropdown filter monitoring). */
-  async examFilters() {
+  /** Daftar ujian yang punya attempt (untuk dropdown filter) — hanya milik penguji. */
+  async examFilters(user: Requester) {
     const grouped = await this.prisma.examAttempt.groupBy({
       by: ['examId'],
       where: { examId: { not: null } },
       _count: { _all: true },
     });
-    const ids = grouped.map((g) => g.examId).filter(Boolean) as string[];
+    let ids = grouped.map((g) => g.examId).filter(Boolean) as string[];
+    if (user.role !== 'superadmin') {
+      const owned = new Set(await this.ownedExamIds(user.id));
+      ids = ids.filter((id) => owned.has(id));
+    }
+    const idSet = new Set(ids);
     const exams = ids.length
       ? await this.prisma.exam.findMany({
           where: { id: { in: ids } },
@@ -64,7 +116,7 @@ export class MonitorService {
       : [];
     const tMap = new Map(exams.map((e) => [e.id, e.title]));
     return grouped
-      .filter((g) => g.examId)
+      .filter((g) => g.examId && idSet.has(g.examId))
       .map((g) => ({
         id: g.examId as string,
         title: tMap.get(g.examId as string) ?? '(ujian terhapus)',
@@ -73,9 +125,11 @@ export class MonitorService {
       .sort((a, b) => b.count - a.count);
   }
 
-  async submissions(problemId?: string) {
+  async submissions(problemId: string | undefined, user: Requester) {
+    const scope = await this.scopeProblemIds(problemId, user);
+    if (scope === 'none') return [];
     const rows = await this.prisma.submission.findMany({
-      where: problemId ? { problemId } : undefined,
+      where: scope === 'all' ? {} : { problemId: { in: scope } },
       orderBy: { createdAt: 'desc' },
       take: 100,
       select: {
