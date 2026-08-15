@@ -19,6 +19,32 @@ const DOCKER_BASE = DOCKER_PARTS.slice(1);
 const TIMEOUT_MS = Number(process.env.SANDBOX_TIMEOUT_SECONDS ?? 15) * 1000;
 const MEMORY = process.env.SANDBOX_MEMORY ?? '512m';
 const MAX_OUTPUT = 100_000;
+// Batas kontainer sandbox yang berjalan bersamaan (anti-lonjakan CPU saat banyak "Run" serentak).
+const MAX_CONCURRENT = Math.max(1, Number(process.env.SANDBOX_MAX_CONCURRENT ?? 48));
+
+// Semaphore penghitung: jalankan maksimal N tugas, sisanya antre. Tanpa dependensi.
+class Semaphore {
+  private active = 0;
+  private readonly queue: Array<() => void> = [];
+  constructor(private readonly max: number) {}
+  async run<T>(fn: () => Promise<T>): Promise<T> {
+    if (this.active >= this.max) await new Promise<void>((res) => this.queue.push(res));
+    this.active++;
+    try {
+      return await fn();
+    } finally {
+      this.active--;
+      this.queue.shift()?.();
+    }
+  }
+  get inUse(): number {
+    return this.active;
+  }
+  get waiting(): number {
+    return this.queue.length;
+  }
+}
+const sandboxLimiter = new Semaphore(MAX_CONCURRENT);
 
 interface CompileSpec {
   /** Perintah menghasilkan artefak di /out (mis. /out/a.out) dari /work/<file>. */
@@ -349,7 +375,8 @@ export class ExecuteService {
     stdin: string,
     timeoutMs: number,
   ): Promise<Omit<ExecuteResult, 'durationMs'>> {
-    return new Promise((resolve) => {
+    // Tiap kontainer sandbox memakai 1 slot; sisanya antre (jaga CPU saat banyak "Run" serentak).
+    return sandboxLimiter.run(() => new Promise((resolve) => {
       const child = spawn(DOCKER_BIN, runArgs, {
         stdio: ['pipe', 'pipe', 'pipe'],
       });
@@ -387,6 +414,6 @@ export class ExecuteService {
           timedOut,
         });
       });
-    });
+    }));
   }
 }
