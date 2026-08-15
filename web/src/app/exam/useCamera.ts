@@ -225,7 +225,7 @@ export function useCamera(attemptId: string | null, enabled: boolean) {
   // Kirim frame ke GPU /vision berkala (deteksi HP + face-rec penguji).
   useEffect(() => {
     if (status !== 'on' || !attemptId) return;
-    const interval = Number(process.env.NEXT_PUBLIC_VISION_INTERVAL_MS ?? 6000);
+    const interval = Number(process.env.NEXT_PUBLIC_VISION_INTERVAL_MS ?? 8000);
     void sendVision();
     const t = setInterval(() => void sendVision(), interval);
     return () => clearInterval(t);

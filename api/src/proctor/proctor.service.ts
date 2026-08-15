@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
@@ -26,11 +26,43 @@ interface KeyIn {
 }
 
 @Injectable()
-export class ProctorService {
+export class ProctorService implements OnModuleInit {
+  private readonly log = new Logger('Retention');
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
   ) {}
+
+  onModuleInit(): void {
+    if (process.env.RETENTION_ENABLED === 'false') return;
+    // Sapu bukti lama: sekali ~1 menit setelah start, lalu tiap 24 jam.
+    setTimeout(() => void this.retentionSweep(), 60_000);
+    setInterval(() => void this.retentionSweep(), 24 * 60 * 60 * 1000);
+  }
+
+  // Hapus bukti berat (keystroke/event/snapshot + objek MinIO) utk attempt lebih tua dari retensi.
+  async retentionSweep(): Promise<void> {
+    const days = Math.max(1, Number(process.env.RETENTION_DAYS ?? 30));
+    const cutoff = new Date(Date.now() - days * 86_400_000);
+    const old = await this.prisma.examAttempt.findMany({
+      where: { startedAt: { lt: cutoff } },
+      select: { id: true },
+      take: 1000,
+    });
+    if (old.length === 0) return;
+    const ids = old.map((a) => a.id);
+    const snaps = await this.prisma.proctorSnapshot.findMany({
+      where: { attemptId: { in: ids }, objectKey: { not: null } },
+      select: { objectKey: true },
+    });
+    for (const s of snaps) if (s.objectKey) await this.storage.remove(s.objectKey);
+    const k = await this.prisma.keystroke.deleteMany({ where: { attemptId: { in: ids } } });
+    const ev = await this.prisma.proctorEvent.deleteMany({ where: { attemptId: { in: ids } } });
+    const sn = await this.prisma.proctorSnapshot.deleteMany({ where: { attemptId: { in: ids } } });
+    this.log.log(
+      `Retensi ${days}h: ${ids.length} attempt lama dibersihkan (keystroke ${k.count}, event ${ev.count}, snapshot ${sn.count}).`,
+    );
+  }
 
   async createAttempt(problemId?: string, examId?: string, userId?: string) {
     const a = await this.prisma.examAttempt.create({
