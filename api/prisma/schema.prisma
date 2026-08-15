@@ -148,7 +148,9 @@ model Keystroke {
   attemptId String
   attempt   ExamAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
   t         Int // ms offset dari mulai attempt
-  value     String
+  p         Int         @default(0) // delta: posisi mulai perubahan
+  d         Int         @default(0) // delta: jumlah karakter dihapus di posisi p
+  value     String // delta: teks yang disisipkan (bukan teks penuh) -> hemat disk
 
   @@index([attemptId])
 }

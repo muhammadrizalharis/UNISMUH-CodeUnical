@@ -14,7 +14,9 @@ export function useProctor() {
 
   const attemptRef = useRef<string | null>(null);
   const startAtRef = useRef(0);
-  const keyBufRef = useRef<{ t: number; value: string }[]>([]);
+  const keyBufRef = useRef<{ t: number; p: number; d: number; value: string }[]>([]);
+  const pendingRef = useRef(''); // nilai editor terkini
+  const committedRef = useRef(''); // nilai terakhir yang sudah dicatat sebagai delta
 
   const sendEvent = useCallback(async (kind: string) => {
     const id = attemptRef.current;
@@ -59,19 +61,18 @@ export function useProctor() {
       // tetap jalan lokal
     }
     startAtRef.current = Date.now();
+    pendingRef.current = '';
+    committedRef.current = '';
+    keyBufRef.current = [];
     setActive(true);
     const screenApi = window.screen as unknown as { isExtended?: boolean };
     if (screenApi.isExtended) void sendEvent('multimonitor');
   }, [sendEvent]);
 
+  // Cukup catat nilai editor terkini; delta (posisi/hapus/sisip) dihitung sampler berkala di bawah.
   const recordKeystroke = useCallback((value: string) => {
-    if (!active) return;
-    const t = Date.now() - startAtRef.current;
-    const buf = keyBufRef.current;
-    const last = buf[buf.length - 1];
-    if (!last || t - last.t > 400) buf.push({ t, value });
-    else last.value = value;
-  }, [active]);
+    pendingRef.current = value;
+  }, []);
 
   const logPaste = useCallback(() => void sendEvent('paste'), [sendEvent]);
   const dismissWarning = useCallback(() => setWarning(null), []);
@@ -104,9 +105,23 @@ export function useProctor() {
     };
   }, [active, sendEvent]);
 
-  // flush keystroke + heartbeat
+  // sampler delta + flush keystroke + heartbeat
   useEffect(() => {
     if (!active) return;
+    // Tiap 250ms: bila editor berubah, catat 1 delta (prefix/suffix diff) -> hemat disk + replay presisi.
+    const sample = setInterval(() => {
+      const cur = pendingRef.current;
+      const prev = committedRef.current;
+      if (cur === prev) return;
+      const t = Date.now() - startAtRef.current;
+      const min = Math.min(prev.length, cur.length);
+      let p = 0;
+      while (p < min && prev[p] === cur[p]) p++;
+      let s = 0;
+      while (s < min - p && prev[prev.length - 1 - s] === cur[cur.length - 1 - s]) s++;
+      keyBufRef.current.push({ t, p, d: prev.length - p - s, value: cur.slice(p, cur.length - s) });
+      committedRef.current = cur;
+    }, 250);
     const flush = setInterval(() => {
       const id = attemptRef.current;
       if (!id || keyBufRef.current.length === 0) return;
@@ -116,12 +131,13 @@ export function useProctor() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ keys }),
       }).catch(() => undefined);
-    }, 3000);
+    }, 2000);
     const hb = setInterval(() => {
       const id = attemptRef.current;
       if (id) fetch(`${API}/attempts/${id}/heartbeat`, { method: 'POST' }).catch(() => undefined);
     }, 15000);
     return () => {
+      clearInterval(sample);
       clearInterval(flush);
       clearInterval(hb);
     };

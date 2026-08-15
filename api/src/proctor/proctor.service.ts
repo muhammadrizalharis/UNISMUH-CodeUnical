@@ -20,6 +20,8 @@ interface EventIn {
 }
 interface KeyIn {
   t: number;
+  p?: number;
+  d?: number;
   value: string;
 }
 
@@ -69,10 +71,13 @@ export class ProctorService {
 
   async logKeys(attemptId: string, keys: KeyIn[]) {
     if (!keys?.length) return { ok: true, saved: 0 };
-    const rows = keys.slice(0, 500).map((k) => ({
+    // Simpan sebagai DELTA (posisi p, hapus d karakter, sisip value) -> hemat disk vs teks penuh.
+    const rows = keys.slice(0, 1000).map((k) => ({
       attemptId,
       t: Math.max(0, Math.floor(k.t)),
-      value: String(k.value).slice(0, 20000),
+      p: Math.max(0, Math.floor(k.p ?? 0)),
+      d: Math.max(0, Math.floor(k.d ?? 0)),
+      value: String(k.value ?? '').slice(0, 20000),
     }));
     await this.prisma.keystroke.createMany({ data: rows });
     await this.prisma.examAttempt
@@ -93,11 +98,17 @@ export class ProctorService {
       where: { id: attemptId },
       include: {
         events: { orderBy: { at: 'asc' } },
-        keystrokes: { orderBy: { t: 'asc' } },
+        keystrokes: { orderBy: [{ t: 'asc' }, { id: 'asc' }] },
       },
     });
     if (!attempt) throw new NotFoundException('Attempt tidak ditemukan.');
-    return attempt;
+    // Rekonstruksi delta -> snapshot teks penuh (agar pemutaran/ReplayModal tak berubah).
+    let text = '';
+    const keystrokes = attempt.keystrokes.map((k) => {
+      text = text.slice(0, k.p) + k.value + text.slice(k.p + k.d);
+      return { t: k.t, value: text };
+    });
+    return { ...attempt, keystrokes };
   }
 
   async saveSnapshot(attemptId: string, kind: string, dataUrl: string) {
