@@ -100,7 +100,8 @@ const CHECKS = [
   { name: 'Web :47300', fn: () => httpUp('http://127.0.0.1:47300/') },
   { name: 'Postgres :47432', fn: () => tcpUp('127.0.0.1', 47432) },
   { name: 'MinIO :47900', fn: () => httpUp('http://127.0.0.1:47900/minio/health/live') },
-  { name: 'Proctor-AI :47610', fn: () => httpUp('http://127.0.0.1:47610/health', { needOk: true }) },
+  // Proctor-AI OPSIONAL: sering sengaja OFF selama dev (nahan GPU VRAM/RAM). Tak memicu alert saat mati.
+  { name: 'Proctor-AI :47610', optional: true, fn: () => httpUp('http://127.0.0.1:47610/health', { needOk: true }) },
 ];
 const state = new Map();
 function fmtDur(ms) {
@@ -113,6 +114,10 @@ async function checkAll(announce) {
   const lines = [];
   for (const c of CHECKS) {
     const up = await c.fn();
+    if (c.optional) {
+      lines.push(`${up ? '🟢' : '⚪'} ${c.name}${up ? '' : ' (nonaktif)'}`);
+      continue; // opsional: hanya tampilkan status, tak pernah alert
+    }
     lines.push(`${up ? '🟢' : '🔴'} ${c.name}`);
     const prev = state.get(c.name);
     if (!prev) { state.set(c.name, { up, since: Date.now() }); continue; }
