@@ -11,7 +11,7 @@ CONTAINER="codeunical-postgres"
 DBUSER="codeunical"
 DBNAME="codeunical"
 DIR="$HOME/codeunical-backups"
-LOG="$HOME/.codeunical-backup.log"
+LOG="$HOME/logs/codeunical-backup.log"
 KEEP=14
 
 log() { echo "$(date -Is) $*" >> "$LOG"; }
