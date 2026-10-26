@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
-# Redeploy CodeUnical di server self-hosted.
-# Jalankan DI SERVER tempat docker-compose berjalan, bukan di mesin dev.
+# Redeploy CodeUnical.
+# PENTING: Aplikasi web & api CodeUnical dijalankan via systemd user service
+# (bukan Docker). docker-compose HANYA menyediakan infra: postgres & minio.
+# Jalankan skrip ini di host tempat service berjalan.
 #
 #   ./scripts/redeploy.sh
-#
-# Script akan: ambil kode terbaru dari main, rebuild image Docker (menarik
-# base image Node/Postgres terbaru), lalu restart service tanpa downtime lama.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -15,13 +14,24 @@ git fetch origin
 git checkout main
 git pull --ff-only origin main
 
-echo "==> Rebuild & restart container (tanpa cache base image lama)"
-docker compose pull || true
-docker compose build --pull
-docker compose up -d
+echo "==> Pastikan infra (postgres, minio) berjalan"
+docker compose up -d postgres minio
+
+echo "==> API (NestJS): install deps + build"
+( cd api && npm ci && npm run build )
+
+echo "==> Web (Next.js): install deps (mode next dev merekompilasi otomatis)"
+( cd web && npm ci )
+
+echo "==> Restart service aplikasi (systemd --user)"
+systemctl --user daemon-reload
+systemctl --user restart codeunical-api codeunical-web codeunical-guard
 
 echo "==> Status"
-docker compose ps
+for u in codeunical-api codeunical-web codeunical-guard; do
+  echo "    $u -> $(systemctl --user is-active "$u")"
+done
 
-echo "==> Selesai. Verifikasi versi Next.js/Node di dalam container bila perlu:"
-echo "    docker compose exec web node --version"
+echo "==> Verifikasi (opsional):"
+echo "    curl -s -o /dev/null -w '%{http_code}\\n' http://127.0.0.1:47080/   # api"
+echo "    curl -s -o /dev/null -w '%{http_code}\\n' http://127.0.0.1:47300/   # web"
